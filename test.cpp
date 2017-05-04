@@ -1,6 +1,7 @@
 #include "strategy.h"
 #include <math.h>
 #include <vector>
+#include <ros/ros.h>
 
 #define PI 3.14
 
@@ -11,7 +12,8 @@ typedef struct {
   int y;
 }point;
 
-float dist_whitel(point bot,float orient){
+
+float strategy::dist_whitel(point bot,float orient){
 
   if(orient>=0 && orient<PI/2){
     if(20-bot.x<20-bot.y)
@@ -37,7 +39,7 @@ float dist_whitel(point bot,float orient){
 
 }
 
-float angle(float ang){
+float strategy::angle(float ang){
   
   if(ang>=0 && ang<=PI)
     return ang;
@@ -48,42 +50,41 @@ float angle(float ang){
 
 }
 
-void action(point t_bot, point bot, float orient){
+
+void strategy::action(point t_bot, point bot, float orient){
   float theta1,theta2;  
 
-  theta1=atan((t_bot.y-bot.y)/(t_bot.x-bot.x))-PI/4;
-  theta2=theta + PI/2;
+  theta1=angle(atan((t_bot.y-bot.y)/(t_bot.x-bot.x))-PI/4);
+  theta2=angle(theta + PI/2);
 
-  if(orient>=theta1 && orient<=theta2){
-    //do nothing
-  }
-  else if(orient>theta2 && orient<angle(theta2+PI/4)){
+
+  
+  if( (orient>theta2 && orient<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI)<0 && (orient>theta2 || orient<angle(theta2+PI) ) ) ){
     //one 45 degree rotation anticlockwise
   }
-  else if(orient>=angle(theta1+PI) && orient<=angle(theta2+PI)){
+  else if( (orient>=angle(theta1+PI) && orient<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (orient>=angle(theta1+PI) || orient<=angle(theta2+PI)) ) ){
     //turn 180 degree
   }
-  else if(orient<theta1 && orient>=angle(theta1-PI/4)){
+  else if( (orient<theta1 && orient>=angle(theta1-PI/4)) || ( theta1*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/4) || orient<theta1 ) ) ){
     //one 180 degree turn and then one 45 degree anti clockwise rotation
   }
-  else if(orient>angle(theta2+PI/4) && orient<=angle(theta2+PI/2)){
+  else if( (orient>angle(theta2+PI/4) && orient<=angle(theta2+PI/2)) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (orient>angle(theta1+PI/4) || orient<angle(theta2+PI/2) ) )){
     //two 45 degree anticlockwise rotations
   }
-
-  else if(orient<angle(theta1-PI/4) && orient>=angle(theta1-PI/2)){
+  else if( (orient<angle(theta1-PI/4) && orient>=angle(theta1-PI/2)) || ( angle(theta1-PI/2)*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/2) || orient<angle(theta1-PI/4) ) )){
     //one 180 degree turn and two 45 degree anticlockwise turn
   }
 
 }
 
 
-void plan(int no,vector<int> a){
-  //no for the target bot and the vector for the bots inside the circle
-  
+void strategy::plan(int no,vector<int> a){
+ //no for the target bot and the vector for the bots inside the circle
+
   int size=a.size();  
-  point target_bot,bot;                      // suscribe to the publisher to get the coordinates of the target bot 
+  point target_bot,bot;                                   // suscribe to the publisher to get the coordinates of the target bot 
   float dis,bot_no=a[0],dist_line,min,orient;     
-  point bot;                                 //for the bots inside the circle
+  point bot;                                              //for the bots inside the circle
 
   for(int i=0;i<size;i++){
     //suscribe and get the coordinates of the bot with the no a[i]
@@ -102,13 +103,3 @@ void plan(int no,vector<int> a){
   
 
 } 
-
-
-
-
-
-
-
-
-
-
