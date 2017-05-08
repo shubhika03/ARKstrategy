@@ -38,7 +38,7 @@ void strategy::find_herd_bots()
 {
 	float max;
 	for(int i=4;i<14;i++){
-	
+
 		char topic_name[40];
 		sprintf(topic_name, "robot%d/odom", i);
 		sub = n.subscribe(topic_name, 1, posecallback);
@@ -62,15 +62,15 @@ void strategy::find_herd_bots()
 
 void strategy::herd_bots(){                            //go to the no1 and no2 bot and tap for turning them towards the center
 
-	
+
 
 }
 
 
 void strategy::ComputeDistance(){                                     //computes distance of every bot from the green line
-			
+
 	for(int i=4;i<14;i++){
-	
+
 		char topic_name[40];
 		sprintf(topic_name, "robot%d/odom", i);
 		sub = n.subscribe(topic_name, 1, posecallback);
@@ -83,19 +83,19 @@ void strategy::ComputeDistance(){                                     //computes
 }
 
 
-void strategy::FindBotsInsideCircle(){                               //to find the bot inside the 5m circle 			
-	
+void strategy::FindBotsInsideCircle(){                               //to find the bot inside the 5m circle
+
 	int centerBotID;
 
 	p temp = *ClosestBot.begin();
 	centerBotID = temp.second;
-	
+
 	int count=4;
 
 	while(count<14){
-	
+
 		if(count!=centerBotID){
-		
+
 			char topic_name[40];
 			sprintf(topic_name, "robot%d/odom", centerBotID);
 			sub = n.subscribe(topic_name, 1, centercallback);
@@ -105,10 +105,10 @@ void strategy::FindBotsInsideCircle(){                               //to find t
 			sub = n.subscribe(topic_name2, 1, posecallback);
 			ros::spinOnce();
 		}
-		
+
 
 		if((pow(posx-centerX,2) + pow(posy-centerY,2) - 25) <= 0 && count!=centerBotID){
-		
+
 			BotsInsideCircle.push_back (count);
 		}
 		count++;
@@ -126,30 +126,64 @@ void strategy::FirstOperation(){                                          //to d
 	char topic_name[40];
 	sprintf(topic_name, "robot%d/odom", centerBotID);
 	sub = n.subscribe(topic_name, 1000, centercallback);
-
+  ros::spinOnce();
 	GetEulerAngles(&yaw, &pitch, &roll);
+
+	ros::Publisher pub = n.advertise<std_msgs::Odometry>(topic_name, 1000);
 
 	double theta1 = atan((10 - centerY)/(10 - centerX));
 	double theta2 = atan((10 - centerY)/(-10 - centerX));
-	counter = 0;
+
 	if(yaw>=theta2 && yaw<=theta1)
 		//do nothing
-	else if((theta2 - yaw)<=(PI/4))
+	else if((PI+theta1)<=yaw && (PI+theta2)>=yaw)
 	{
-		yaw = yaw + PI/4;
-		//subscribe to get location of the center bot
-		//use gotoXYZ to send the quad to the bot
-		//publish the new position of the bot
-		//gotoXYZ()
+		//180 degree turn, come in front
+		yaw = angle(yaw + PI);
+		sub1 = n.subscribe(topic_name, 1000, centercallback);
+		ros::spinOnce();
+		//publish the new orientation values
+		std_msgs::Odometry msg;
+		msg->pose.pose.position.x = centerX;
+		msg->pose.pose.position.y = centerY;
+		//convert euler to quaternium and publish the values
 	}
-	else if(yaw>=(theta2-PI) && yaw<=(theta1-PI))
-		yaw = yaw + PI;
-	else if(yaw>=(theta1-PI) && yaw<=(theta2-PI/4))
-		yaw = yaw + PI/2; //tap 2 times
-	else if(yaw<=(theta2-PI) || yaw>=theta1)
-		yaw = yaw + 1.5*PI; //in-front and then 2 taps
-	time_t timer;
-	counter = time(&timer);
+	else if(yaw>=theta2 && yaw<=(theta2 + PI/4))
+	{
+		//45 degree turn, tap from top
+		yaw = angle(yaw-PI/4);
+		sub1 = n.subscribe(topic_name, 1000, centercallback);
+		ros::spinOnce();
+		//publish the new orientation values
+		std_msgs::Odometry msg;
+		msg->pose.pose.position.x = centerX;
+		msg->pose.pose.position.y = centerY;
+		//convert euler to quaternium and publish the values
+	}
+	else if(yaw>=(theta2 + PI/4) && yaw<=(theta2 + PI/2))
+	{
+		//90 degree turn, tap twice
+		yaw = angle(yaw-PI/2);
+		sub1 = n.subscribe(topic_name, 1000, centercallback);
+		ros::spinOnce();
+		//publish the new orientation values
+		std_msgs::Odometry msg;
+		msg->pose.pose.position.x = centerX;
+		msg->pose.pose.position.y = centerY;
+		//convert euler to quaternium and publish the values
+	}
+	else if(yaw>=(theta2+PI) && yaw<=(theta2+PI+PI/4))
+	{
+		//first rotate by 180 degrees and then turn by 45 degrees
+		yaw = angle(yaw-PI-PI/4);
+		sub1 = n.subscribe(topic_name, 1000, centercallback);
+		ros::spinOnce();
+		//publish the new orientation values
+		std_msgs::Odometry msg;
+		msg->pose.pose.position.x = centerX;
+		msg->pose.pose.position.y = centerY;
+		//convert euler to quaternium and publish the values
+	}
 }
 
 
@@ -217,7 +251,7 @@ void strategy::GetEulerAngles( double* yaw, double* pitch, double* roll)
 }
 
 float strategy::angle(float ang){
-  
+
   if(ang>=0 && ang<=PI)
     return ang;
   else if(ang>PI)
@@ -229,13 +263,13 @@ float strategy::angle(float ang){
 
 
 void strategy::action(point t_bot, point bot, float orient){
-  float theta1,theta2;  
+  float theta1,theta2;
 
   theta1=angle(atan((t_bot.y-bot.y)/(t_bot.x-bot.x))-PI/4);
   theta2=angle(theta + PI/2);
 
 
-  
+
   if( (orient>theta2 && orient<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI)<0 && (orient>theta2 || orient<angle(theta2+PI) ) ) ){
     //one 45 degree rotation anticlockwise
   }
@@ -262,17 +296,17 @@ void strategy::plan(int no){
   centerBotID = temp.second;
 
   int size=BotsInsideCircle.size();
-  point target_bot;   
+  point target_bot;
 
   char topic_name[40];
   sprintf(topic_name, "robot%d/odom", centerBotID);
-  sub = n.subscribe(topic_name, 1, centercallback);         
-  ros::spinOnce();                                           // suscribe to the publisher to get the coordinates of the target bot 	
+  sub = n.subscribe(topic_name, 1, centercallback);
+  ros::spinOnce();                                           // suscribe to the publisher to get the coordinates of the target bot
   target_bot.x=centerX;
   target_bot.y=centerY;
 
-  float dis,bot_no=BotsInsideCircle[0],min;     
- 
+  float dis,bot_no=BotsInsideCircle[0],min;
+
 
   for(int i=0;i<size;i++){
 
@@ -294,13 +328,6 @@ void strategy::plan(int no){
   }
   //suscribe and get the position of the selected bot no
   action(target_bot,bot,orient);
-  
-
-} 
 
 
-
-
-
-
-
+}
