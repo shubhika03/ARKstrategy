@@ -10,8 +10,25 @@
 #include "std_msgs/String.h"
 
 #define PI 3.14159
+#define MIN_DIST 18
 
 using namespace std;
+
+int strategy::IsOutsideWhite()
+{
+	int centerBotID;
+	p temp = *ClosestBot.begin();
+	centerBotID = temp.second;
+	char topic_name[40];
+	sprintf(topic_name, "robot%d/odom", i);
+	sub = n.subscribe(topic_name, 1, centercallback);
+	ros::spinOnce();
+
+	if(centerY>=MIN_DIST)
+		return 1;
+	else
+		return 0;
+}
 
 void strategy::posecallback(nav_msgs::Odometry::ConstPtr& msg){
 
@@ -61,7 +78,6 @@ void strategy::find_herd_bots()
 }
 
 void strategy::herd_bots(){                            //go to the no1 and no2 bot and tap for turning them towards the center
-
 
 
 }
@@ -129,7 +145,7 @@ void strategy::FirstOperation(){                                          //to d
   ros::spinOnce();
 	GetEulerAngles(&yaw, &pitch, &roll);
 
-	ros::Publisher pub = n.advertise<std_msgs::Odometry>(topic_name, 1000);
+	ros::Publisher pub = n.advertise<nav_msgs::Odometry>(topic_name, 1000);
 
 	double theta1 = atan((10 - centerY)/(10 - centerX));
 	double theta2 = atan((10 - centerY)/(-10 - centerX));
@@ -143,7 +159,7 @@ void strategy::FirstOperation(){                                          //to d
 		sub1 = n.subscribe(topic_name, 1000, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
@@ -155,31 +171,31 @@ void strategy::FirstOperation(){                                          //to d
 		sub1 = n.subscribe(topic_name, 1000, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
 	}
-	else if(yaw>=(theta2 + PI/4) && yaw<=(theta2 + PI/2))
+	else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2))
 	{
 		//90 degree turn, tap twice
 		yaw = angle(yaw-PI/2);
 		sub1 = n.subscribe(topic_name, 1000, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
 	}
-	else if(yaw>=(theta2+PI) && yaw<=(theta2+PI+PI/4))
+	else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))
 	{
 		//first rotate by 180 degrees and then turn by 45 degrees
 		yaw = angle(yaw-PI-PI/4);
 		sub1 = n.subscribe(topic_name, 1000, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
