@@ -72,7 +72,7 @@ void strategy::ComputeDistance(){                                     //computes
 	for(int i=4;i<14;i++){
 
 		char topic_name[40];
-		sprintf(topic_name, "robot%d/odom", i);
+		sprintfs(topic_name, "robot%d/odom", i);
 		sub = n.subscribe(topic_name, 1, posecallback);
 		ros::spinOnce();
 		double y = 10 - posY;
@@ -126,24 +126,24 @@ void strategy::FirstOperation(){                                          //to d
 	char topic_name[40];
 	sprintf(topic_name, "robot%d/odom", centerBotID);
 	sub = n.subscribe(topic_name, 1000, centercallback);
-  ros::spinOnce();
+    ros::spinOnce();
 	GetEulerAngles(&yaw, &pitch, &roll);
 
-	ros::Publisher pub = n.advertise<std_msgs::Odometry>(topic_name, 1000);
+	pub = n.advertise<nav_msgs::Odometry>(topic_name, 1000);
 
 	double theta1 = atan((10 - centerY)/(10 - centerX));
 	double theta2 = atan((10 - centerY)/(-10 - centerX));
 
-	if(yaw>=theta2 && yaw<=theta1)
-		//do nothing
-	else if((PI+theta1)<=yaw && (PI+theta2)>=yaw)
+	/*if(yaw>=theta2 && yaw<=theta1)
+		//do nothing*/
+	if((PI+theta1)<=yaw && (PI+theta2)>=yaw)
 	{
 		//180 degree turn, come in front
 		yaw = angle(yaw + PI);
-		sub1 = n.subscribe(topic_name, 1000, centercallback);
+		sub = n.subscribe(topic_name, 1, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
@@ -152,10 +152,10 @@ void strategy::FirstOperation(){                                          //to d
 	{
 		//45 degree turn, tap from top
 		yaw = angle(yaw-PI/4);
-		sub1 = n.subscribe(topic_name, 1000, centercallback);
+		sub1 = n.subscribe(topic_name, 1, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
@@ -167,7 +167,7 @@ void strategy::FirstOperation(){                                          //to d
 		sub1 = n.subscribe(topic_name, 1000, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
@@ -179,7 +179,7 @@ void strategy::FirstOperation(){                                          //to d
 		sub1 = n.subscribe(topic_name, 1000, centercallback);
 		ros::spinOnce();
 		//publish the new orientation values
-		std_msgs::Odometry msg;
+		nav_msgs::Odometry msg;
 		msg->pose.pose.position.x = centerX;
 		msg->pose.pose.position.y = centerY;
 		//convert euler to quaternium and publish the values
@@ -220,7 +220,26 @@ void strategy::GetEulerAngles( double* yaw, double* pitch, double* roll)
 
   }
 
+
+void strategy::toQuaternion(double pitch, double roll, double yaw)
+{
+	double t0 = cos(yaw * 0.5);
+	double t1 = sin(yaw * 0.5);
+	double t2 = cos(roll * 0.5);
+	double t3 = sin(roll * 0.5);
+	double t4 = cos(pitch * 0.5);
+	double t5 = sin(pitch * 0.5);
+
+	w = t0 * t2 * t4 + t1 * t3 * t5;
+	x = t0 * t3 * t4 - t1 * t2 * t5;
+	y = t0 * t2 * t5 + t1 * t3 * t4;
+	z = t1 * t2 * t4 - t0 * t3 * t5;
+
+}
+
+
   float strategy::dist_whitel(){
+  
   	double yaw,pitch,roll;
   	GetEulerAngles(&yaw,&pitch,&roll);
   	float orient=yaw;
@@ -262,57 +281,99 @@ float strategy::angle(float ang){
 }
 
 
-void strategy::action(point t_bot, point bot, float orient){
-  float theta1,theta2;
+void strategy::action(int bot_no){
+  float theta1,theta2,orient;
+  char topic_name[40];
+  sprintf(topic_name, "robot%d/odom", bot_no);
 
-  theta1=angle(atan((t_bot.y-bot.y)/(t_bot.x-bot.x))-PI/4);
+  theta1=angle(atan((centerY-posY)/(centerX-posX))-PI/4);
   theta2=angle(theta + PI/2);
 
+  double yaw,pitch,roll;
+  GetEulerAngles(&yaw,&pitch,&roll);
+  orient=yaw;
 
+
+  pub = n.advertise<nav_msgs::Odometry>(topic_name, 1);
+  nav_msgs::Odometry msg;
+  msg->pose.pose.position.x = posX;
+  msg->pose.pose.position.y = posY;
 
   if( (orient>theta2 && orient<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI)<0 && (orient>theta2 || orient<angle(theta2+PI) ) ) ){
     //one 45 degree rotation anticlockwise
+  	yaw=angle(yaw+PI/4);
+    toQuaternion(yaw,pitch,roll);
+    msg->pose.pose.orientation.x=x;
+    msg->pose.pose.orientation.y=y;
+    msg->pose.pose.orientation.z=z;
+    msg->pose.pose.orientation.w=w;
+    pub(msg);
   }
   else if( (orient>=angle(theta1+PI) && orient<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (orient>=angle(theta1+PI) || orient<=angle(theta2+PI)) ) ){
     //turn 180 degree
+    yaw=angle(yaw+PI);
+    toQuaternion(yaw,pitch,roll);
+    msg->pose.pose.orientation.x=x;
+    msg->pose.pose.orientation.y=y;
+    msg->pose.pose.orientation.z=z;
+    msg->pose.pose.orientation.w=w;
+    pub(msg);
   }
   else if( (orient<theta1 && orient>=angle(theta1-PI/4)) || ( theta1*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/4) || orient<theta1 ) ) ){
     //one 180 degree turn and then one 45 degree anti clockwise rotation
+    yaw=angle(yaw+5*PI/4);
+    toQuaternion(yaw,pitch,roll);
+    msg->pose.pose.orientation.x=x;
+    msg->pose.pose.orientation.y=y;
+    msg->pose.pose.orientation.z=z;
+    msg->pose.pose.orientation.w=w;
+    pub(msg);
   }
   else if( (orient>angle(theta2+PI/4) && orient<=angle(theta2+PI/2)) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (orient>angle(theta1+PI/4) || orient<angle(theta2+PI/2) ) )){
     //two 45 degree anticlockwise rotations
+    yaw=angle(yaw+PI/2);
+    toQuaternion(yaw,pitch,roll);
+    msg->pose.pose.orientation.x=x;
+    msg->pose.pose.orientation.y=y;
+    msg->pose.pose.orientation.z=z;
+    msg->pose.pose.orientation.w=w;
+    pub(msg);
   }
   else if( (orient<angle(theta1-PI/4) && orient>=angle(theta1-PI/2)) || ( angle(theta1-PI/2)*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/2) || orient<angle(theta1-PI/4) ) )){
     //one 180 degree turn and two 45 degree anticlockwise turn
+    yaw=angle(yaw+3*PI/2);
+    toQuaternion(yaw,pitch,roll);
+    msg->pose.pose.orientation.x=x;
+    msg->pose.pose.orientation.y=y;
+    msg->pose.pose.orientation.z=z;
+    msg->pose.pose.orientation.w=w;
+    pub(msg);
   }
 
 }
 
 
-void strategy::plan(int no){
+void strategy::t_plan(){
  //no for the target bot and the vector for the bots inside the circle
   int centerBotID;
   p temp = *ClosestBot.begin();
   centerBotID = temp.second;
 
   int size=BotsInsideCircle.size();
-  point target_bot;
 
   char topic_name[40];
   sprintf(topic_name, "robot%d/odom", centerBotID);
   sub = n.subscribe(topic_name, 1, centercallback);
   ros::spinOnce();                                           // suscribe to the publisher to get the coordinates of the target bot
-  target_bot.x=centerX;
-  target_bot.y=centerY;
 
   float dis,bot_no=BotsInsideCircle[0],min;
-
+  char topic_name2[40];
 
   for(int i=0;i<size;i++){
 
     //suscribe and get the coordinates of the bot with the no a[i]
     //get the orintation of the bot from x axis
-  	char topic_name2[40];
+  	
 	sprintf(topic_name2, "robot%d/odom", BotsInsideCircle[i]);
 	sub = n.subscribe(topic_name2, 1, posecallback);
 	ros::spinOnce();
@@ -327,7 +388,10 @@ void strategy::plan(int no){
 
   }
   //suscribe and get the position of the selected bot no
-  action(target_bot,bot,orient);
+  sprintf(topic_name2, "robot%d/odom", bot_no);
+  sub = n.subscribe(topic_name2, 1, posecallback);
+  ros::spinOnce();
+  action(bot_no);
 
 
 }

@@ -24,12 +24,13 @@ class strategy{
 		void FindBotsInsideCircle();                             // finds bot inside the circle
 		void FirstOperation(int centerBotID);                    // decides the operation to be performed on the target bot
 		float angle(float ang);                                  // to make sure the angle is within the range
-	    float distwhitel(point bot,float orient);                // calculates the least dist from the white line
-	    void action();         // action to be performed on the bots inside the circle
-	    void t_plan(int no);                                     // formulates the plan for the bot inside the circle
+	    float distwhitel();                                      // calculates the least dist from the white line
+	    void action(int bot_no);                                 // action to be performed on the bots inside the circle
+	    void t_plan();                                           // formulates the plan for the bot inside the circle
 	    void GetEulerAngles(double w, double x, double y, double z, double* yaw, double* pitch, double* roll);
 	    void posecallback(nav_msgs::Odometry::ConstPtr& msg);
-	    void centercallback(nav_msgs::Odometry::ConstPtr& msg)
+	    void centercallback(nav_msgs::Odometry::ConstPtr& msg);
+	    void toQuaternion(double pitch, double roll, double yaw);
 	    ros::NodeHandle n;
 	    ros::Publisher pub;
 	    ros::Suscriber sub;
