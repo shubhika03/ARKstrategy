@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
 		{
 			time_t timer1, timer2;
 			timer1 = time(NULL);
-			STRATEGY.plan();
-			STRATEGY FirstOperation();
+			STRATEGY.t_plan();
+			STRATEGY.FirstOperation();
 			timer2 = time(NULL) - timer1;
 			while(timer2<=20)
 				timer2 = time(NULL) - timer1;
