@@ -6,6 +6,7 @@
 #include "nav_msgs/Odometry.h"
 #include "strategy.h"
 #include "ros/ros.h"
+#include "ark_llp/go2goal.h"
 
 #define PI 3.14159
 #define MIN_DIST 9
@@ -30,9 +31,11 @@ int strategy::IsOutsideWhite()
 }
 
 void strategy::posecallback(nav_msgs::Odometry::ConstPtr msg){
+	ROS_INFO("call back\n");
 
 	posX = msg->pose.pose.position.y;
 	posY = -msg->pose.pose.position.x;
+	posZ = msg->pose.pose.position.z;
 	x = msg->pose.pose.orientation.x;
 	y = msg->pose.pose.orientation.y;
 	z = msg->pose.pose.orientation.z;
@@ -43,76 +46,112 @@ void strategy::centercallback(nav_msgs::Odometry::ConstPtr msg){
 
 	centerX = msg->pose.pose.position.y;
 	centerY = -msg->pose.pose.position.x;
+	centerZ = msg->pose.pose.position.z;
 	x = msg->pose.pose.orientation.x;
 	y = msg->pose.pose.orientation.y;
 	z = msg->pose.pose.orientation.z;
 	w = msg->pose.pose.orientation.w;
 }
 
+void strategy::quadcallback(nav_msgs::Odometry::ConstPtr msg){
+
+	quadX = msg->pose.pose.position.y;
+	quadY = -msg->pose.pose.position.x;
+	quadZ = msg->pose.pose.position.z;
+	x = msg->pose.pose.orientation.x;
+	y = msg->pose.pose.orientation.y;
+	z = msg->pose.pose.orientation.z;
+	w = msg->pose.pose.orientation.w;
+}
 
 void strategy::find_herd_bots()
 {
 	float max;
 	for(int i=4;i<14;i++){
-
 		char topic_name[40];
 		sprintf(topic_name, "robot%d/odom", i);
+		ros::Rate loop_rate(10);
 		sub = n.subscribe(topic_name, 1, &strategy::posecallback,this);
-		ros::spinOnce();
+		posY = 0.0;
+		while(posY == 0.0){
+			ros::spinOnce();
+			loop_rate.sleep();
+			ROS_INFO("%lf %d\n", posY, i);
+		}
 		double y = posY;
 		distance_bots.push_back(y);
 	}
 
 	max=-FLT_MAX;
 	no1 = no2 = 0;
-	for(int i=4;i<14;i++){
+	for(int i=0;i<10;i++){
 		if(distance_bots[i]<0){
 			if(distance_bots[i]>=max){
 				no2 = no1;
 				max=distance_bots[i];
-				no1 = i;
+				no1 = i+4;
 			}
 		}
 	}
-	herd_bots(no1, no2);
+	//herd_bots();
 }
 
-void strategy::herd_bots(int no1, int no2)                              //go to the no1 and no2 bot and tap for turning them towards the center
+void strategy::herd_bots()                              //go to the no1 and no2 bot and tap for turning them towards the center
 {
 	int bots[2] = {no1, no2};
+	ROS_INFO("%d  %d\n",no1,no2);
 	int z=0;
 	while(z<=1)
-	{
+	{	ROS_INFO("%d bot\n",z);
 		double yaw=0, pitch=0, roll=0;
 		char topic_name[40];
+		ros::Rate loop_rate(10);
 		sprintf(topic_name, "robot%d/odom", bots[z]);
+		
 		sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
-	  ros::spinOnce();
+	  	ros::spinOnce();
+	  	loop_rate.sleep();
 		GetEulerAngles(&yaw, &pitch, &roll);
 
 	 	pub = n.advertise<nav_msgs::Odometry>(topic_name, 1000);
 		nav_msgs::Odometry msg;
-		double theta1 = atan((10 - posY)/(10 - posX));
-		double theta2 = atan((10 - posY)/(-10 - posX));
+		/*double theta1 = atan((10 - posY)/(10 - posX));
+		double theta2 = atan((10 - posY)/(-10 - posX));*/
+		yaw =angle(yaw+PI);
+		toQuaternion(yaw,pitch,roll);
+
+		while(ros::ok())
+		{
+			obj.set_dest(posX, posY, posZ, yaw);
+			sub_quad = n.subscribe("ground_truth/state", 1000, &strategy::quadcallback, this);
+			sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
+			if(abs(quadX-posX)<=0.1 && abs(quadY-posY)<=0.1 && abs(quadZ-posZ)<=0.1)
+				break;
+		}
+		
 
 		/*if(yaw>=theta2 && yaw<=theta1)
 			//do nothing*/
-		if((yaw>=angle(theta1+PI) && yaw<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (yaw>=angle(theta1+PI) || yaw<=angle(theta2+PI)) ) )
+		/*if((yaw>=angle(theta1+PI) && yaw<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (yaw>=angle(theta1+PI) || yaw<=angle(theta2+PI)) ) )
 		{
+			ROS_INFO("opt 1\n");
 			//180 degree turn, come in front
 			yaw = angle(yaw + PI);
 			toQuaternion(yaw,pitch,roll);
+			obj.set_dest(posX, posY, posZ, yaw);
 	    msg.pose.pose.orientation.x=x;
 	    msg.pose.pose.orientation.y=y;
 	    msg.pose.pose.orientation.z=z;
 	    msg.pose.pose.orientation.w=w;
 	    pub.publish(msg);
 		}
-		else if((yaw>theta2 && yaw<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
+		else if((yaw=>theta2 && yaw<=angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
 		{
 			//45 degree turn, tap from top
+			ROS_INFO("opt 2\n");
 			yaw = angle(yaw-PI/4);
 			toQuaternion(yaw,pitch,roll);
+			obj.set_dest(posX, posY, posZ, yaw);
 	    msg.pose.pose.orientation.x=x;
 	    msg.pose.pose.orientation.y=y;
 	    msg.pose.pose.orientation.z=z;
@@ -122,8 +161,10 @@ void strategy::herd_bots(int no1, int no2)                              //go to 
 		else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (yaw>angle(theta1+PI/4) || yaw<angle(theta2+PI/2))))
 		{
 			//90 degree turn, tap twice
+			ROS_INFO("opt 3\n");
 			yaw = angle(yaw-PI/2);
 			toQuaternion(yaw,pitch,roll);
+			obj.set_dest(posX, posY, posZ, yaw);
 	    msg.pose.pose.orientation.x=x;
 	    msg.pose.pose.orientation.y=y;
 	    msg.pose.pose.orientation.z=z;
@@ -134,17 +175,18 @@ void strategy::herd_bots(int no1, int no2)                              //go to 
 		else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4) || (angle(theta2+PI)*angle(theta2+PI+PI/4) && (yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))))
 		{
 			//first rotate by 180 degrees and then turn by 45 degrees
+			ROS_INFO("opt 4\n");
 			yaw = angle(yaw-PI-PI/4);
 			toQuaternion(yaw,pitch,roll);
+			obj.set_dest(posX, posY, posZ, yaw);
 	    msg.pose.pose.orientation.x=x;
 	    msg.pose.pose.orientation.y=y;
 	    msg.pose.pose.orientation.z=z;
 	    msg.pose.pose.orientation.w=w;
 	    pub.publish(msg);
-		}
+		}*/
 		z++;
 	}
-
 }
 
 
@@ -154,9 +196,10 @@ void strategy::ComputeDistance(){                                     //computes
 
 		char topic_name[40];
 		sprintf(topic_name, "robot%d/odom", i);
-		sub = n.subscribe(topic_name, 1, &strategy::posecallback,this);
+		sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
 		ros::spinOnce();
 		double y = 10 - posY;
+		ROS_INFO("y = %d", y);
 		int BotID = i;
 		ClosestBot.insert(make_pair(y,BotID));
 
@@ -222,6 +265,7 @@ void strategy::FirstOperation(){                                          //to d
 		//180 degree turn, come in front
 		yaw = angle(yaw + PI);
 		toQuaternion(yaw,pitch,roll);
+		obj.set_dest(centerX, centerY, centerZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -244,6 +288,7 @@ void strategy::FirstOperation(){                                          //to d
 		//90 degree turn, tap twice
 		yaw = angle(yaw-PI/2);
 		toQuaternion(yaw,pitch,roll);
+		obj.set_dest(centerX, centerY, centerZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -256,6 +301,7 @@ void strategy::FirstOperation(){                                          //to d
 		//first rotate by 180 degrees and then turn by 45 degrees
 		yaw = angle(yaw-PI-PI/4);
 		toQuaternion(yaw,pitch,roll);
+		obj.set_dest(centerX, centerY, centerZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -381,6 +427,7 @@ void strategy::action(int bot_no){
     //one 45 degree rotation anticlockwise
   	yaw=angle(yaw+PI/4);
     toQuaternion(yaw,pitch,roll);
+    obj.set_dest(posX, posY, posZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -391,6 +438,7 @@ void strategy::action(int bot_no){
     //turn 180 degree
     yaw=angle(yaw+PI);
     toQuaternion(yaw,pitch,roll);
+    obj.set_dest(posX, posY, posZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -401,6 +449,7 @@ void strategy::action(int bot_no){
     //one 180 degree turn and then one 45 degree anti clockwise rotation
     yaw=angle(yaw+5*PI/4);
     toQuaternion(yaw,pitch,roll);
+    obj.set_dest(posX, posY, posZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -411,6 +460,7 @@ void strategy::action(int bot_no){
     //two 45 degree anticlockwise rotations
     yaw=angle(yaw+PI/2);
     toQuaternion(yaw,pitch,roll);
+    obj.set_dest(posX, posY, posZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
@@ -421,6 +471,7 @@ void strategy::action(int bot_no){
     //one 180 degree turn and two 45 degree anticlockwise turn
     yaw=angle(yaw+3*PI/2);
     toQuaternion(yaw,pitch,roll);
+    obj.set_dest(posX, posY, posZ, yaw);
     msg.pose.pose.orientation.x=x;
     msg.pose.pose.orientation.y=y;
     msg.pose.pose.orientation.z=z;
