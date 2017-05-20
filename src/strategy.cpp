@@ -350,7 +350,7 @@ void strategy::rotate (double relative_angle, char publish_name[40], int ID)
     GetEulerAngles(q, &Yaw, &Pitch, &Roll);
 
     publi.publish(vel_msg);
-    if(fabs(angle(Yaw) - angle(yaw_i+relative_angle)) <= 0.1)
+    if(fabs(angle(Yaw) - angle(yaw_i+relative_angle)) <= 0.05)
   	 break;
 
 }
@@ -414,28 +414,42 @@ void strategy::GetEulerAngles(qt q, double* yaw, double* pitch, double* roll)
        }
    }
 
-/*
 
-  float strategy::dist_whitel(){
 
-  	double yaw,pitch,roll;
-  	GetEulerAngles(&yaw,&pitch,&roll);
-  	float orient=yaw;
+float strategy::dist_whitel(int id){
 
+  ros::Rate loop_rate(100);
+  nav_msgs::Odometry temp1;
+
+  ros::spinOnce();
+  loop_rate.sleep();
+  retrieve_pose(id, &temp1);
+  posX=temp1.pose.pose.position.x;
+  posY=temp1.pose.pose.position.y;
+
+  qt q;
+  q.x = temp1.pose.pose.orientation.x;
+  q.y = temp1.pose.pose.orientation.y;
+  q.z = temp1.pose.pose.orientation.z;
+  q.w = temp1.pose.pose.orientation.w;
+
+  double yaw,pitch,roll;
+  GetEulerAngles(q,&yaw,&pitch,&roll);
+  float orient=yaw;
 
   if(orient>=0 && orient<PI/2){
       return 10-posY;
   }
 
   if(orient>=PI/2 && orient>PI){
-      return 10+posY;
+      if(10-posY<10+posX)
+        return 10-posY;
+      else 
+        return 10+posX;
   }
 
   if(orient<0 && orient>-PI/2){
-  	if(10-posX<10+posY)
-      return 10-posX;
-  	else
-  		return 10+posY;
+      return 10+posY;
   }
 
   if(orient>-PI && orient<-PI/2){
@@ -445,7 +459,7 @@ void strategy::GetEulerAngles(qt q, double* yaw, double* pitch, double* roll)
   		return 10+posX;
   }
 
-}*/
+}
 
 float strategy::angle(float ang){
 
@@ -459,121 +473,89 @@ float strategy::angle(float ang){
 }
 
 
-/*void strategy::action(int bot_no){
+void strategy::action(int bot_no){
+ 
   float theta1,theta2,orient;
-  char topic_name[40],publish_name[40];
-  sprintf(topic_name, "robot%d/odom", bot_no);
-  //sprintf(publish_name, "robot%d/cmd_vel", bot_no);
+ 
+  sprintf(publish_name, "robot%d/cmd_vel", bot_no);
+
+
+  nav_msgs::Odometry temp1;
+  ros::Rate loop_rate(100);
+  ros::spinOnce();
+  loop_rate.sleep();
+  retrieve_pose(bot_no, &temp1);  
+  posX=temp1.pose.pose.position.x;
+  posY=temp1.pose.pose.position.y;
+
+  qt q;
+  q.x = temp1.pose.pose.orientation.x;
+  q.y = temp1.pose.pose.orientation.y;
+  q.z = temp1.pose.pose.orientation.z;
+  q.w = temp1.pose.pose.orientation.w;
+
 
   theta1=angle(atan((centerX-posX)/(centerY-posY))-PI/4);
   theta2=angle(theta1 + PI/2);
 
   double yaw,pitch,roll;
-  GetEulerAngles(&yaw,&pitch,&roll);
+  GetEulerAngles(q,&yaw,&pitch,&roll);
   orient=yaw;
-
-
-  pub = n.advertise<nav_msgs::Odometry>(topic_name, 1);
-
-  nav_msgs::Odometry msg;
-  msg.pose.pose.position.x = posY;
-  msg.pose.pose.position.y = -posX;
 
   ROS_INFO("theta 1 action%f\n",theta1);
   ROS_INFO("theta 2 action  %f\n",theta2);
   ROS_INFO("yaw %f\n",yaw);
+		
 
-
-		while(ros::ok())
-		{
-			obj.set_dest(-posY, posX, posZ, yaw);
-			sub_quad = n.subscribe("ground_truth/state", 1000, &strategy::quadcallback, this);
-			sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
-			if(abs(quadX-posX)<=1 && abs(quadY-posY)<=1 && abs(quadZ-posZ)<=1)
-				break;
-		}
-
-  if( (orient>theta2 && orient<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (orient>theta2 || orient<angle(theta2+PI/4) ) ) ){
-    //one 45 degree rotation anticlockwise
-  	yaw=angle(yaw+PI/4);
+  if( (orient>=theta2 && orient<=angle(theta2+PI/4)) || ( theta2*angle(theta2-PI/4)<0 && (orient>theta2 || orient<angle(theta2+PI/4) ) ) ){
+    //one 45 degree rotation clockwise
+  	//yaw=angle(yaw-PI/4);
   	ROS_INFO("condition 1\n");
-    toQuaternion(yaw,pitch,roll);
-    //obj.set_dest(posX, posY, posZ, yaw);
-   msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-  //  pub.publish(msg);
-  //rotate(yaw,publish_name);
+    rotate(PI/4,publish_name,bot_no);
   }
   else if( (orient>=angle(theta1+PI) && orient<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (orient>=angle(theta1+PI) || orient<=angle(theta2+PI)) ) ){
     //turn 180 degree
-    //yaw=angle(yaw+PI);
+    //yaw=angle(yaw-PI);
     ROS_INFO("condition 2\n");
-    toQuaternion(yaw,pitch,roll);
-    //obj.set_dest(posX, posY, posZ, yaw);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-   // pub.publish(msg);
-   //rotate(yaw,publish_name);
+    rotate(PI,publish_name,bot_no);
   }
-  else if( (orient<theta1 && orient>=angle(theta1-PI/4)) || ( theta1*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/4) || orient<theta1 ) ) ){
-    //one 180 degree turn and then one 45 degree anti clockwise rotation
-    //yaw=angle(yaw+5*PI/4);
+  else if( (orient<=theta1 && orient>=angle(theta1-PI/4)) || ( theta1*angle(theta1-PI/4)<0 && (orient>=angle(theta1-PI/4) || orient<=theta1 ) ) ){
+    //one 180 degree turn and then two 45 degree clockwise rotation
+    //yaw=angle(yaw+3*PI/2);
     ROS_INFO("condition 3\n");
-    toQuaternion(yaw,pitch,roll);
-    //obj.set_dest(posX, posY, posZ, yaw);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-    //pub.publish(msg);
+    rotate(3*PI/2,publish_name,bot_no);
   }
-  else if( (orient>angle(theta2+PI/4) && orient<=angle(theta2+PI/2)) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (orient>angle(theta1+PI/4) || orient<angle(theta2+PI/2) ) )){
+  else if( (orient>=angle(theta2+PI/4) && orient<=angle(theta2+PI/2)) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<=0 && (orient>angle(theta1+PI/4) || orient<angle(theta2+PI/2) ) )){
     //two 45 degree anticlockwise rotations
     //yaw=angle(yaw+PI/2);
     ROS_INFO("condition 4\n");
-    toQuaternion(yaw,pitch,roll);
-    //obj.set_dest(posX, posY, posZ, yaw);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-    //pub.publish(msg);
+    rotate(PI/2,publish_name,bot_no);
   }
   else if( (orient<angle(theta1-PI/4) && orient>=angle(theta1-PI/2)) || ( angle(theta1-PI/2)*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/2) || orient<angle(theta1-PI/4) ) )){
-    //one 180 degree turn and two 45 degree anticlockwise turn
-    //yaw=angle(yaw+3*PI/2);
+    //one 180 degree turn and one 45 degree clockwise turn
+    //yaw=angle(yaw-5*PI/4);
     ROS_INFO("condition 5\n");
-    toQuaternion(yaw,pitch,roll);
-    //obj.set_dest(posX, posY, posZ, yaw);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-    //pub.publish(msg);
-  //rotate(yaw,publish_name);
+    rotate(5*PI/4,publish_name,bot_no);
   }
 
 }
 
 
-void strategy::t_plan()
-{
+void strategy::t_plan(){
 
-//  ROS_INFO("t_plan started\n");
   int centerBotID;
   p temp = *ClosestBot.begin();
   centerBotID = temp.second;
 
   int size=BotsInsideCircle.size();
 
-  char topic_name[40];
-  sprintf(topic_name, "robot%d/odom", centerBotID);
-  sub = n.subscribe(topic_name, 1, &strategy::centercallback,this);
-  ros::spinOnce();                                           // suscribe to the publisher to get the coordinates of the target bot
+  nav_msgs::Odometry temp1;
+  ros::Rate loop_rate(100);
+  ros::spinOnce();
+  loop_rate.sleep();
+  retrieve_pose(centerBotID, &temp1);
+  centerX=temp.pose.pose.position.x;
+  centerY=temp.pose.pose.position.y;
 
   float dis,min;
   int bot_no=BotsInsideCircle[0];
@@ -581,11 +563,8 @@ void strategy::t_plan()
 
   for(int i=0;i<size;i++){
 
-	sprintf(topic_name2, "robot%d/odom", BotsInsideCircle[i]);
-	sub = n.subscribe(topic_name2, 1, &strategy::posecallback,this);
-	ros::spinOnce();
 
-    dis=dist_whitel();
+    dis=dist_whitel(BotsInsideCircle[i]);
     if(i==0)
       min=dis;
     else if(dis<min){
@@ -595,13 +574,17 @@ void strategy::t_plan()
 
   }
   ROS_INFO("bot inside the circle to be considered %d\n",bot_no);
-  sprintf(topic_name2, "robot%d/odom", bot_no);
-  sub = n.subscribe(topic_name2, 1, &strategy::posecallback,this);
+  
   ros::spinOnce();
+  loop_rate.sleep();
+  retrieve_pose(centerBotID, &temp1);
+  centerX=temp.pose.pose.position.x;
+  centerY=temp.pose.pose.position.y;
 
   action(bot_no);
 }
-*/
+
+
 void strategy::groundbot4Callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
   gb4pose.pose.pose.position.x = msg->pose.pose.position.x;
