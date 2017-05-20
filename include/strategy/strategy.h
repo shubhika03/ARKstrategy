@@ -32,7 +32,7 @@ class strategy{
     	float dist_whitel();                                   																											   // calculates the least dist from the white line
     	void action(int bot_no);                               																											   // action to be performed on the bots inside the circle
     	void t_plan();
-		*/ 
+		*/
 		float angle(float ang);                                                      																											   // formulates the plan for the bot inside the circle
     	void GetEulerAngles(qt q,double* yaw, double* pitch, double* roll);
 		//int IsOutsideWhite();                                   																											 //check is the center bot is outside green line
@@ -52,7 +52,7 @@ class strategy{
 
    	strategy()
   	{
-		clockwise = false;
+		clockwise = true;
 		angular_speed = 0.78;
 	    sub_4 = n.subscribe("robot4/odom", 100, &strategy::groundbot4Callback,this);
 	    sub_5 = n.subscribe("robot5/odom", 100, &strategy::groundbot5Callback,this);
@@ -74,7 +74,7 @@ class strategy{
     ros:: Subscriber sub_7;
     ros:: Subscriber sub_8;
     ros:: Subscriber sub_9;
-    ros:: Subscriber sub_10; 
+    ros:: Subscriber sub_10;
     ros:: Subscriber sub_11;
     ros:: Subscriber sub_12;
     ros:: Subscriber sub_13;
@@ -91,7 +91,7 @@ class strategy{
 		int no1,no2;
         bool clockwise;
 
-		
+
 
 	  nav_msgs::Odometry gb4pose;                                     //position of ground bot
 	  nav_msgs::Odometry gb5pose;

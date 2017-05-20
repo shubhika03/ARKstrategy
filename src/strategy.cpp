@@ -207,195 +207,101 @@ void strategy::herd_bots()                              //go to the no1 and no2 
 	}
 }
 
-/*
-void strategy::ComputeDistance(){                                     //computes distance of every bot from the green line
 
-	for(int i=4;i<14;i++){
-
-		char topic_name[40];
-		sprintf(topic_name, "robot%d/odom", i);
-		sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
+void strategy::ComputeDistance()                                     //computes distance of every bot from the green line
+{
+	for(int i=4;i<14;i++)
+  {
+    nav_msgs:: Odometry temp;
 		ros::Rate loop_rate(10);
-		posX=0;
-		while(posX == 0.0){
-			ros::spinOnce();
-			loop_rate.sleep();
-			//ROS_INFO("%f\n",posX);
-		}
-
-
-
-		//ros::spinOnce();
-		double y = 10 - posX;
-		//ROS_INFO("x = %f", y);
-		int BotID = i;
-		ClosestBot.insert(make_pair(y,BotID));
-
+		ros::spinOnce();
+		loop_rate.sleep();
+    retrieve_pose(i, &temp);
+		double y = 10 - temp.pose.pose.position.x;
+		ClosestBot.insert(make_pair(y,i));
 	}
 }
 
 
-void strategy::FindBotsInsideCircle(){                               //to find the bot inside the 5m circle
-
+void strategy::FindBotsInsideCircle()                               //to find the bot inside the 5m circle
+{
 	int centerBotID;
-
 	p temp = *ClosestBot.begin();
 	centerBotID = temp.second;
-	ROS_INFO("center bot id %d\n",centerBotID);
+
 	int count=4;
-
-	while(count<14){
-
-		if(count!=centerBotID){
-
-			char topic_name[40];
-			sprintf(topic_name, "robot%d/odom", centerBotID);
-			sub = n.subscribe(topic_name, 1, &strategy::centercallback,this);
-
+	while(count<14)
+  {
+		if(count!=centerBotID)
+    {
+      nav_msgs::Odometry center, inside;
 			ros::Rate loop_rate(10);
-		    centerX=0;
-			while(centerX == 0.0){
 			ros::spinOnce();
 			loop_rate.sleep();
-			}
-
-
-			//ros::spinOnce();
-			char topic_name2[40];
-			sprintf(topic_name2, "robot%d/odom", count);
-			sub = n.subscribe(topic_name2, 1, &strategy::posecallback,this);
-
-			ros::Rate loop_rate2(10);
-		    posX=0;
-		    while(posX == 0.0){
-			ros::spinOnce();
-			loop_rate2.sleep();
-
-		    }
-
-
-			//ros::spinOnce();
-		}
-
-		double dist=pow(-posY+centerY,2) + pow(posX-centerX,2);
-		//ROS_INFO("%f\n",dist);
-		if(dist - 25 <= 0 && count!=centerBotID){
-			//ROS_INFO("BOT ID: %d inside circle\n",count);
-			BotsInsideCircle.push_back(count);
-		}
-		count++;
-	}
+      retrieve_pose(centerBotID, &center);
+      retrieve_pose(count, &inside);
+     }
+  	double dist = pow((inside.pose.pose.position.x - center.pose.pose.position.x),2) + pow((inside.pose.pose.position.y - center.pose.pose.position.y),2);
+  	if((dist - 25)<=0 && count!=centerBotID)
+  		BotsInsideCircle.push_back(count);
+  	count++;
+  }
 }
 
-void strategy::FirstOperation(){                                          //to decide the first operation of the center bot
 
+void strategy::FirstOperation()                                          //to decide the first operation of the center bot
+{
 	double yaw=0, pitch=0, roll=0;
-
 	int centerBotID;
-
 	p temp = *ClosestBot.begin();
 	centerBotID = temp.second;
 
-	char topic_name[40],publish_name[40];
+	char publish_name[40];
 
-	sprintf(topic_name, "robot%d/odom", centerBotID);
-        sprintf(publish_name, "robot%d/cmd_vel",  centerBotID);
-	sub = n.subscribe(topic_name, 1000, &strategy::centercallback,this);
-        ros::spinOnce();
+	fly_quad.navigate_quad(centerBotID);
 
-		while(ros::ok())
-		{
-			if(fabs(centerX)<=10 && fabs(centerY)<=10)
-			{
-				obj.set_dest(-centerY, centerX, centerZ+0.7, yaw);
-				sub_quad = n.subscribe("ground_truth/state", 1000, &strategy::quadcallback, this);
-				sub = n.subscribe(topic_name, 1000, &strategy::centercallback,this);
-				if(abs(quadX-centerX)<=0.1 && abs(quadY-centerY)<=0.1 && abs(quadZ-centerZ)<=0.8)
-					break;
-			}
-		}
+  nav_msgs::Odometry center;
+  qt centerq;
+  ros::Rate loop_rate(10);
+  ros::spinOnce();
+  ros::loop_rate.sleep();
+
+  retrieve_pose(centerBotID, &center);
+
+  centerq.x = center.pose.pose.orientation.x;
+  centerq.y = center.pose.pose.orientation.y;
+  centerq.z = center.pose.pose.orientation.z;
+  centerq.w = center.pose.pose.orientation.w;
 
 	double theta1 = atan((10 - centerX)/(10 + centerY));
 	double theta2 = atan((10 - centerX)/(-10 + centerY));
 
-	GetEulerAngles(&yaw, &pitch, &roll);
-
-	ROS_INFO("theta1: %f\n", theta1);
-	ROS_INFO("theta2: %f\n", theta2);
-	ROS_INFO("Yaw: %f\n", yaw);
+	GetEulerAngles(centerq, &yaw, &pitch, &roll);
 
 	if(yaw>=theta2 && yaw<=theta1)
-		ROS_INFO("Condition 0\n");
+		ROS_INFO("Condition 0::::::do nothing\n");
 
 	else if((yaw>=angle(theta1+PI) && yaw<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (yaw>=angle(theta1+PI) || yaw<=angle(theta2+PI)) ) )
 	{
-		ROS_INFO("Condition 1 %lf\n",yaw);
-		//180 degree turn, come in front
-		yaw = angle(yaw + PI);
-
-      rotate(yaw,publish_name,topic_name);
-      sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
-            GetEulerAngles(&yaw, &pitch, &roll);
-            ROS_INFO("After rotation: %f\n",yaw);
+		ROS_INFO("Condition 1::::::180 degree turn %f\n",yaw);
+    rotate(PI,publish_name,centerBotID);
 	}
 	else if((yaw>theta2 && yaw<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
 	{
-		//45 degree turn, tap from top
-		ROS_INFO("Condition 2 \n");
-		yaw = angle(yaw-PI/4);
-		/*toQuaternion(yaw,pitch,roll);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-
-    rotate(yaw,publish_name,topic_name);
-    sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
-            GetEulerAngles(&yaw, &pitch, &roll);
-            ROS_INFO("After rotation: %f \n",yaw);
+		ROS_INFO("Condition 2::::::45 degree turn \n");
+    rotate((PI/4),publish_name,centerBotID);
 	}
 	else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (yaw>angle(theta1+PI/4) || yaw<angle(theta2+PI/2))))
 	{
-		//90 degree turn, tap twice
-		ROS_INFO("Condition 3  \n");
-		yaw = angle(yaw-PI/2);
-		/*toQuaternion(yaw,pitch,roll);
-//		obj.set_dest(centerX, centerY, centerZ, yaw);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-
-    rotate(yaw,publish_name,topic_name);
-    sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
-            GetEulerAngles(&yaw, &pitch, &roll);
-            ROS_INFO("After rotation: \n");
-
+		ROS_INFO("Condition 3::::::90 degree turn, tap twice\n");
+    rotate((PI/2),publish_name,centerBotID);
 	}
 	else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4) || (angle(theta2+PI)*angle(theta2+PI+PI/4) && (yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))))
 	{
-		//first rotate by 180 degrees and then turn by 45 degrees
-		ROS_INFO("Condition 4 \n");
-		yaw = angle(yaw-PI-PI/4);
-		/*toQuaternion(yaw,pitch,roll);
-//		obj.set_dest(centerX, centerY, centerZ, yaw);
-    msg.pose.pose.orientation.x=x;
-    msg.pose.pose.orientation.y=y;
-    msg.pose.pose.orientation.z=z;
-    msg.pose.pose.orientation.w=w;
-
-    rotate(yaw,publish_name, topic_name);
-    sub = n.subscribe(topic_name, 1000, &strategy::posecallback,this);
-            GetEulerAngles(&yaw, &pitch, &roll);
-            ROS_INFO("After rotation: %f\n", yaw);
+		ROS_INFO("Condition 4::::::180 then 45 degree turn\n");
+    rotate((5*PI/4),publish_name,centerBotID);
 	}
 }
-
-*/
-
-
-
-
 
 void strategy::rotate (double relative_angle, char publish_name[40], int ID)
 {
@@ -442,7 +348,7 @@ void strategy::rotate (double relative_angle, char publish_name[40], int ID)
     q.z = temp.pose.pose.orientation.z;
     q.w = temp.pose.pose.orientation.w;
     GetEulerAngles(q, &Yaw, &Pitch, &Roll);
-    
+
     publi.publish(vel_msg);
     if(fabs(angle(Yaw) - angle(yaw_i+relative_angle)) <= 0.1)
   	 break;
