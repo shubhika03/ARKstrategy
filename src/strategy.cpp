@@ -383,36 +383,36 @@ int strategy::IsOutsideWhite()
 */
 
 void strategy::GetEulerAngles(qt q, double* yaw, double* pitch, double* roll)
-   {
-       const double w2 = q.w*q.w;
-       const double x2 = q.x*q.x;
-       const double y2 = q.y*q.y;
-       const double z2 = q.z*q.z;
-       const double unitLength = w2 + x2 + y2 + z2;    // Normalised == 1, otherwise correction divisor.
-       const double abcd = q.w*q.x + q.y*q.z;
-       const double eps = 1e-7;    // TODO: pick from your math lib instead of hardcoding.
-       const double pi = 3.14159265358979323846;   // TODO: pick from your math lib instead of hardcoding.
-       if (abcd > (0.5-eps)*unitLength)
-       {
-           *yaw = 2 * atan2(q.y, q.w);
-           *pitch = pi;
-           *roll = 0;
-       }
-       else if (abcd < (-0.5+eps)*unitLength)
-       {
-           *yaw = -2 * ::atan2(q.y, q.w);
-           *pitch = -pi;
-           *roll = 0;
-       }
-       else
-       {
-           const double adbc = q.w*q.z - q.x*q.y;
-           const double acbd = q.w*q.y - q.x*q.z;
-           *yaw = ::atan2(2*adbc, 1 - 2*(z2+x2));
-           *pitch = ::asin(2*abcd/unitLength);
-           *roll = ::atan2(2*acbd, 1 - 2*(y2+x2));
-       }
-   }
+ {
+     const double w2 = q.w*q.w;
+     const double x2 = q.x*q.x;
+     const double y2 = q.y*q.y;
+     const double z2 = q.z*q.z;
+     const double unitLength = w2 + x2 + y2 + z2;    // Normalised == 1, otherwise correction divisor.
+     const double abcd = q.w*q.x + q.y*q.z;
+     const double eps = 1e-7;    // TODO: pick from your math lib instead of hardcoding.
+     const double pi = 3.14159265358979323846;   // TODO: pick from your math lib instead of hardcoding.
+     if (abcd > (0.5-eps)*unitLength)
+     {
+         *yaw = 2 * atan2(q.y, q.w);
+         *pitch = pi;
+         *roll = 0;
+     }
+     else if (abcd < (-0.5+eps)*unitLength)
+     {
+         *yaw = -2 * ::atan2(q.y, q.w);
+         *pitch = -pi;
+         *roll = 0;
+     }
+     else
+     {
+         const double adbc = q.w*q.z - q.x*q.y;
+         const double acbd = q.w*q.y - q.x*q.z;
+         *yaw = ::atan2(2*adbc, 1 - 2*(z2+x2));
+         *pitch = ::asin(2*abcd/unitLength);
+         *roll = ::atan2(2*acbd, 1 - 2*(y2+x2));
+     }
+ }
 
 
 
@@ -444,7 +444,7 @@ float strategy::dist_whitel(int id){
   if(orient>=PI/2 && orient>PI){
       if(10-posY<10+posX)
         return 10-posY;
-      else 
+      else
         return 10+posX;
   }
 
@@ -474,9 +474,9 @@ float strategy::angle(float ang){
 
 
 void strategy::action(int bot_no){
- 
+
   float theta1,theta2,orient;
- 
+
   sprintf(publish_name, "robot%d/cmd_vel", bot_no);
 
 
@@ -484,7 +484,7 @@ void strategy::action(int bot_no){
   ros::Rate loop_rate(100);
   ros::spinOnce();
   loop_rate.sleep();
-  retrieve_pose(bot_no, &temp1);  
+  retrieve_pose(bot_no, &temp1);
   posX=temp1.pose.pose.position.x;
   posY=temp1.pose.pose.position.y;
 
@@ -505,7 +505,7 @@ void strategy::action(int bot_no){
   ROS_INFO("theta 1 action%f\n",theta1);
   ROS_INFO("theta 2 action  %f\n",theta2);
   ROS_INFO("yaw %f\n",yaw);
-		
+
 
   if( (orient>=theta2 && orient<=angle(theta2+PI/4)) || ( theta2*angle(theta2-PI/4)<0 && (orient>theta2 || orient<angle(theta2+PI/4) ) ) ){
     //one 45 degree rotation clockwise
@@ -574,7 +574,7 @@ void strategy::t_plan(){
 
   }
   ROS_INFO("bot inside the circle to be considered %d\n",bot_no);
-  
+
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(centerBotID, &temp1);

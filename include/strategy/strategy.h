@@ -24,36 +24,33 @@ class strategy{
     void rotate (double relative_angle, char publish_name[40], int ID);
 		void find_herd_bots();                                  																											 // finds the bot to be herded in the first 20 secs
 		void herd_bots();                                     																											   // herds the bots for the first 20 secs
-		/*
 		void ComputeDistance();                    																												             // computes distance from green line
 		void FindBotsInsideCircle();                            																											 // finds bot inside the circle
 		void FirstOperation();                            																														 // decides the operation to be performed on the target bot
 		float angle(float ang);                                  																											 // to make sure the angle is within the range
-    	float dist_whitel();                                   																											   // calculates the least dist from the white line
-    	void action(int bot_no);                               																											   // action to be performed on the bots inside the circle
-    	void t_plan();
-		*/
-		float angle(float ang);                                                      																											   // formulates the plan for the bot inside the circle
-    	void GetEulerAngles(qt q,double* yaw, double* pitch, double* roll);
-		//int IsOutsideWhite();                                   																											 //check is the center bot is outside green line
+  	float dist_whitel();                                   																											   // calculates the least dist from the white line
+    void action(int bot_no);                               																											   // action to be performed on the bots inside the circle
+  	void t_plan();
+		float angle(float ang);                                                      																											   // formulates the plan for the bot inside the circle    	void GetEulerAngles(qt q,double* yaw, double* pitch, double* roll);
+		int IsOutsideWhite();                                   																											 //check is the center bot is outside green line
 		void retrieve_pose(int ID, nav_msgs::Odometry *gbpose);
 		void groundbot4Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot5Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot6Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot7Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot8Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot9Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot10Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot11Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot12Callback(const nav_msgs::Odometry::ConstPtr& msg);
-    	void groundbot13Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot5Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot6Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot7Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot8Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot9Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot10Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot11Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot12Callback(const nav_msgs::Odometry::ConstPtr& msg);
+  	void groundbot13Callback(const nav_msgs::Odometry::ConstPtr& msg);
 
 		tap_n_turn fly_quad;
 
    	strategy()
   	{
-		clockwise = true;
-		angular_speed = 0.78;
+			clockwise = true;
+			angular_speed = 0.78;
 	    sub_4 = n.subscribe("robot4/odom", 100, &strategy::groundbot4Callback,this);
 	    sub_5 = n.subscribe("robot5/odom", 100, &strategy::groundbot5Callback,this);
 	    sub_6 = n.subscribe("robot6/odom", 100, &strategy::groundbot6Callback,this);
@@ -89,10 +86,7 @@ class strategy{
 		double angular_speed;                                      //  needed for qauternian angle to euler angle
 		vector <float>distance_bots;
 		int no1,no2;
-        bool clockwise;
-
-
-
+    bool clockwise;
 	  nav_msgs::Odometry gb4pose;                                     //position of ground bot
 	  nav_msgs::Odometry gb5pose;
 	  nav_msgs::Odometry gb6pose;
