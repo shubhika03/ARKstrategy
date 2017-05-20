@@ -27,11 +27,11 @@ class strategy{
 		void ComputeDistance();                    																												             // computes distance from green line
 		void FindBotsInsideCircle();                            																											 // finds bot inside the circle
 		void FirstOperation();                            																														 // decides the operation to be performed on the target bot
-		float angle(float ang);                                  																											 // to make sure the angle is within the range
   	float dist_whitel();                                   																											   // calculates the least dist from the white line
     void action(int bot_no);                               																											   // action to be performed on the bots inside the circle
   	void t_plan();
-		float angle(float ang);                                                      																											   // formulates the plan for the bot inside the circle    	void GetEulerAngles(qt q,double* yaw, double* pitch, double* roll);
+		float angle(float ang);                                                      																	 // formulates the plan for the bot inside the circle    	
+		void GetEulerAngles(qt q,double* yaw, double* pitch, double* roll);
 		int IsOutsideWhite();                                   																											 //check is the center bot is outside green line
 		void retrieve_pose(int ID, nav_msgs::Odometry *gbpose);
 		void groundbot4Callback(const nav_msgs::Odometry::ConstPtr& msg);

@@ -458,7 +458,6 @@ float strategy::dist_whitel(int id){
   	else
   		return 10+posX;
   }
-
 }
 
 float strategy::angle(float ang){
@@ -481,12 +480,15 @@ void strategy::action(int bot_no){
 
 
   nav_msgs::Odometry temp1;
+  nav_msgs::Odometry temp2;
   ros::Rate loop_rate(100);
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(bot_no, &temp1);
   posX=temp1.pose.pose.position.x;
   posY=temp1.pose.pose.position.y;
+  centerX=temp2.pose.pose.position.x;
+  centerY=temp2.pose.pose.position.y;
 
   qt q;
   q.x = temp1.pose.pose.orientation.x;
@@ -494,18 +496,12 @@ void strategy::action(int bot_no){
   q.z = temp1.pose.pose.orientation.z;
   q.w = temp1.pose.pose.orientation.w;
 
-
   theta1=angle(atan((centerX-posX)/(centerY-posY))-PI/4);
   theta2=angle(theta1 + PI/2);
 
   double yaw,pitch,roll;
   GetEulerAngles(q,&yaw,&pitch,&roll);
   orient=yaw;
-
-  ROS_INFO("theta 1 action%f\n",theta1);
-  ROS_INFO("theta 2 action  %f\n",theta2);
-  ROS_INFO("yaw %f\n",yaw);
-
 
   if( (orient>=theta2 && orient<=angle(theta2+PI/4)) || ( theta2*angle(theta2-PI/4)<0 && (orient>theta2 || orient<angle(theta2+PI/4) ) ) ){
     //one 45 degree rotation clockwise
@@ -561,25 +557,18 @@ void strategy::t_plan(){
   int bot_no=BotsInsideCircle[0];
   char topic_name2[40];
 
-  for(int i=0;i<size;i++){
-
-
+  for(int i=0;i<size;i++)
+  {
     dis=dist_whitel(BotsInsideCircle[i]);
     if(i==0)
       min=dis;
     else if(dis<min){
       min=dis;
       bot_no=BotsInsideCircle[i];
-    }
+  }
 
   }
   ROS_INFO("bot inside the circle to be considered %d\n",bot_no);
-
-  ros::spinOnce();
-  loop_rate.sleep();
-  retrieve_pose(centerBotID, &temp1);
-  centerX=temp.pose.pose.position.x;
-  centerY=temp.pose.pose.position.y;
 
   action(bot_no);
 }
