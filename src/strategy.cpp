@@ -229,12 +229,17 @@ void strategy::FindBotsInsideCircle()                               //to find th
 	p temp = *ClosestBot.begin();
 	centerBotID = temp.second;
 
+  ROS_INFO("center bot id:::::%d\n", centerBotID);
+
+  nav_msgs::Odometry center;
+  nav_msgs::Odometry inside;
+
 	int count=4;
 	while(count<14)
   {
 		if(count!=centerBotID)
     {
-      nav_msgs::Odometry center, inside;
+
 			ros::Rate loop_rate(10);
 			ros::spinOnce();
 			loop_rate.sleep();
@@ -243,7 +248,10 @@ void strategy::FindBotsInsideCircle()                               //to find th
      }
   	double dist = pow((inside.pose.pose.position.x - center.pose.pose.position.x),2) + pow((inside.pose.pose.position.y - center.pose.pose.position.y),2);
   	if((dist - 25)<=0 && count!=centerBotID)
+    {
   		BotsInsideCircle.push_back(count);
+      ROS_INFO("bot inside circle::::::%d\n", count);
+    }
   	count++;
   }
 }
@@ -257,14 +265,14 @@ void strategy::FirstOperation()                                          //to de
 	centerBotID = temp.second;
 
 	char publish_name[40];
-
-	fly_quad.navigate_quad(centerBotID);
+  sprintf(publish_name, "robot%d/cmd_vel", centerBotID);
+	//fly_quad.navigate_quad(centerBotID);
 
   nav_msgs::Odometry center;
   qt centerq;
   ros::Rate loop_rate(10);
   ros::spinOnce();
-  ros::loop_rate.sleep();
+  loop_rate.sleep();
 
   retrieve_pose(centerBotID, &center);
 
@@ -273,8 +281,8 @@ void strategy::FirstOperation()                                          //to de
   centerq.z = center.pose.pose.orientation.z;
   centerq.w = center.pose.pose.orientation.w;
 
-	double theta1 = atan((10 - centerX)/(10 + centerY));
-	double theta2 = atan((10 - centerX)/(-10 + centerY));
+	double theta1 = atan((10 - center.pose.pose.position.x)/(10 + center.pose.pose.position.y));
+	double theta2 = atan((10 - center.pose.pose.position.x)/(-10 + center.pose.pose.position.y));
 
 	GetEulerAngles(centerq, &yaw, &pitch, &roll);
 
@@ -350,7 +358,8 @@ void strategy::rotate (double relative_angle, char publish_name[40], int ID)
     GetEulerAngles(q, &Yaw, &Pitch, &Roll);
 
     publi.publish(vel_msg);
-    if(fabs(angle(Yaw) - angle(yaw_i+relative_angle)) <= 0.05)
+    ROS_INFO("in while yaw:::%f\n", Yaw);
+    if(fabs(angle(Yaw) - angle(yaw_i+relative_angle)) <= 0.1)
   	 break;
 
 }
@@ -424,8 +433,8 @@ float strategy::dist_whitel(int id){
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(id, &temp1);
-  posX=temp1.pose.pose.position.x;
-  posY=temp1.pose.pose.position.y;
+  double posX=temp1.pose.pose.position.x;
+  double posY=temp1.pose.pose.position.y;
 
   qt q;
   q.x = temp1.pose.pose.orientation.x;
@@ -475,7 +484,7 @@ float strategy::angle(float ang){
 void strategy::action(int bot_no){
 
   float theta1,theta2,orient;
-
+  char publish_name[40];
   sprintf(publish_name, "robot%d/cmd_vel", bot_no);
 
 
@@ -485,10 +494,10 @@ void strategy::action(int bot_no){
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(bot_no, &temp1);
-  posX=temp1.pose.pose.position.x;
-  posY=temp1.pose.pose.position.y;
-  centerX=temp2.pose.pose.position.x;
-  centerY=temp2.pose.pose.position.y;
+  double posX=temp1.pose.pose.position.x;
+  double posY=temp1.pose.pose.position.y;
+  double centerX=temp2.pose.pose.position.x;
+  double centerY=temp2.pose.pose.position.y;
 
   qt q;
   q.x = temp1.pose.pose.orientation.x;
@@ -550,8 +559,8 @@ void strategy::t_plan(){
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(centerBotID, &temp1);
-  centerX=temp.pose.pose.position.x;
-  centerY=temp.pose.pose.position.y;
+  double centerX=temp1.pose.pose.position.x;
+  double centerY=temp1.pose.pose.position.y;
 
   float dis,min;
   int bot_no=BotsInsideCircle[0];

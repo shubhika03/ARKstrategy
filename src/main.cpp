@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	strategy STRATEGY;
 
 	STRATEGY.find_herd_bots();
-/*    
+
 	while(ros::ok())
 	{
 		//STRATEGY.find_herd_bots();
@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 		STRATEGY.FindBotsInsideCircle();
 		STRATEGY.FirstOperation();
 		//STRATEGY.t_plan();
-
+		/*
 		while(STRATEGY.IsOutsideWhite())
 		{
 			time_t timer1, timer2;
@@ -30,4 +30,5 @@ int main(int argc, char *argv[])
 
 		}*/
 	//}
+	}
 }

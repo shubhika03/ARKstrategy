@@ -64,7 +64,7 @@ class tap_n_turn
       flag = 0;
       check = 0;
       count = 0;
-      t0 = 3;
+      t0 = 4;
     }
     Go2Goal destination;
 };

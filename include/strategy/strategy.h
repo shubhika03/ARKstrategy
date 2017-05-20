@@ -27,10 +27,10 @@ class strategy{
 		void ComputeDistance();                    																												             // computes distance from green line
 		void FindBotsInsideCircle();                            																											 // finds bot inside the circle
 		void FirstOperation();                            																														 // decides the operation to be performed on the target bot
-  	float dist_whitel();                                   																											   // calculates the least dist from the white line
+  	float dist_whitel(int id);                                   																											   // calculates the least dist from the white line
     void action(int bot_no);                               																											   // action to be performed on the bots inside the circle
   	void t_plan();
-		float angle(float ang);                                                      																	 // formulates the plan for the bot inside the circle    	
+		float angle(float ang);                                                      																	 // formulates the plan for the bot inside the circle
 		void GetEulerAngles(qt q,double* yaw, double* pitch, double* roll);
 		int IsOutsideWhite();                                   																											 //check is the center bot is outside green line
 		void retrieve_pose(int ID, nav_msgs::Odometry *gbpose);
@@ -50,7 +50,7 @@ class strategy{
    	strategy()
   	{
 			clockwise = true;
-			angular_speed = 0.78;
+			angular_speed = 0.76;
 	    sub_4 = n.subscribe("robot4/odom", 100, &strategy::groundbot4Callback,this);
 	    sub_5 = n.subscribe("robot5/odom", 100, &strategy::groundbot5Callback,this);
 	    sub_6 = n.subscribe("robot6/odom", 100, &strategy::groundbot6Callback,this);
@@ -82,7 +82,7 @@ class strategy{
 		typedef pair <double, int> p;
 		set<p> ClosestBot;                                      //  set containing bot id and dist from green line
 		vector<int> BotsInsideCircle;                           //  vector containing id of bots inside the circle
-		double centerX, centerY,centerZ;                                //  x and y coordinates of the center/target bot
+		//double centerX, centerY,centerZ;                                //  x and y coordinates of the center/target bot
 		double angular_speed;                                      //  needed for qauternian angle to euler angle
 		vector <float>distance_bots;
 		int no1,no2;
