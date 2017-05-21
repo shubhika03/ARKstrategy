@@ -18,6 +18,7 @@ class tap_n_turn
   float t0;                                                       //descent time
   double theta;                                                   //orientation of gb wrt X-axis
   float ErrorLin;                                                 //Get linear error
+  float ErrorLin2;
   nav_msgs::Odometry gbpose;
   nav_msgs::Odometry gb4pose;                                     //position of ground bot
   nav_msgs::Odometry gb5pose;
@@ -53,6 +54,7 @@ class tap_n_turn
     void groundbot13Callback(const nav_msgs::Odometry::ConstPtr& msg);
     void MAVCallback(const nav_msgs::Odometry::ConstPtr& msg);
     float GetErrorLin(const nav_msgs::Odometry MAVdest ,const nav_msgs::Odometry MAVpose);
+    float GetErrorLin2(const nav_msgs::Odometry gbpose ,const nav_msgs::Odometry MAVpose);
     void GetEulerAngles(Quaternionm q, double* yaw, double* pitch, double* roll);
     double GetTheta(int ID);
     void follow();

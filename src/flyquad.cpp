@@ -10,7 +10,7 @@
 #include "../include/strategy/flyquad.h"
 
 #define step 0.1              // step for changing altitude gradually
-#define Eps 0.2             // range for error
+#define Eps 0.4            // range for error
 #define Default 2.5          // Default height for the quad
 #define Delay 5              // time duration for which it is idle in front of the ground bot
 #define GBHeight 0.091948
@@ -52,12 +52,18 @@ int tap_n_turn::navigate_quad(int ID)
       ROS_INFO("following\n");
     }
 
-    else if(ErrorLin < Eps && flag == 0)
+    else if(ErrorLin < Eps || down == true)
     {
       if(count!=0)
       {
-        ROS_INFO("descend\n");
-        descent();
+        ErrorLin2 = GetErrorLin2(gbpose,MAVpose);
+        if(ErrorLin2 <= fabs((t0)*(gbpose.twist.twist.linear.x)))
+        {
+        	descent();
+        	 ROS_INFO("descend\n");
+    	 }
+        else
+        	down = false;
         if (MAVpose.pose.pose.position.z<=GBHeight)
         {
           ascent();
@@ -229,6 +235,13 @@ float tap_n_turn::GetErrorLin(const nav_msgs::Odometry MAVdest ,const nav_msgs::
 {
   float El;
   El = sqrt(pow((MAVdest.pose.pose.position.x - MAVpose.pose.pose.position.x),2) + pow((MAVdest.pose.pose.position.y - MAVpose.pose.pose.position.y),2));
+  return(El);
+}
+
+float tap_n_turn::GetErrorLin2(const nav_msgs::Odometry gbpose ,const nav_msgs::Odometry MAVpose)
+{
+  float El;
+  El = sqrt(pow((gbpose.pose.pose.position.x - MAVpose.pose.pose.position.x),2) + pow((gbpose.pose.pose.position.y - MAVpose.pose.pose.position.y),2));
   return(El);
 }
 
