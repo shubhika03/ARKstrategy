@@ -282,11 +282,11 @@ void strategy::FirstOperation()                                          //to de
   centerq.w = center.pose.pose.orientation.w;
 
 	double theta1 = atan((10 - center.pose.pose.position.x)/(10 + center.pose.pose.position.y));
-	double theta2 = atan((10 - center.pose.pose.position.x)/(-10 + center.pose.pose.position.y));
+	double theta2 = PI - atan((10 - center.pose.pose.position.x)/(-10 + center.pose.pose.position.y));
 
 	GetEulerAngles(centerq, &yaw, &pitch, &roll);
 
-	if(yaw>=theta2 && yaw<=theta1)
+	if(yaw>=theta1 && yaw<=theta2)
 		ROS_INFO("Condition 0::::::do nothing\n");
 
 	else if((yaw>=angle(theta1+PI) && yaw<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (yaw>=angle(theta1+PI) || yaw<=angle(theta2+PI)) ) )
@@ -471,12 +471,12 @@ float strategy::dist_whitel(int id){
 
 float strategy::angle(float ang){
 
-  if(ang>=-1*PI && ang<=PI)
+  if(ang>=-PI && ang<=PI)
     return ang;
   else if(ang>PI)
-    return ang-2*PI;
+    return angle(ang-2*PI);
   else if(ang<-PI)
-    return ang+2*PI;
+    return angle(ang+2*PI);
 
 }
 
