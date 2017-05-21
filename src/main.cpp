@@ -12,23 +12,22 @@ int main(int argc, char *argv[])
 
 	while(ros::ok())
 	{
-		//STRATEGY.find_herd_bots();
 		STRATEGY.ComputeDistance();
 		STRATEGY.FindBotsInsideCircle();
 		STRATEGY.FirstOperation();
-		//STRATEGY.t_plan();
-		/*
+		STRATEGY.t_plan();
+		
 		while(STRATEGY.IsOutsideWhite())
 		{
 			time_t timer1, timer2;
 			timer1 = time(NULL);
-			STRATEGY.t_plan();
 			STRATEGY.FirstOperation();
+			STRATEGY.FindBotsInsideCircle();
+			STRATEGY.t_plan();
 			timer2 = time(NULL) - timer1;
 			while(timer2<=20)
 				timer2 = time(NULL) - timer1;
 
-		}*/
-	//}
+		}
 	}
 }

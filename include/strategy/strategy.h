@@ -85,8 +85,9 @@ class strategy{
 		//double centerX, centerY,centerZ;                                //  x and y coordinates of the center/target bot
 		double angular_speed;                                      //  needed for qauternian angle to euler angle
 		vector <float>distance_bots;
+		vector <int>bots_removed;
 		int no1,no2;
-    bool clockwise;
+    	bool clockwise;
 	  nav_msgs::Odometry gb4pose;                                     //position of ground bot
 	  nav_msgs::Odometry gb5pose;
 	  nav_msgs::Odometry gb6pose;

@@ -10,10 +10,12 @@
 #include "../include/strategy/flyquad.h"
 
 #define step 0.1              // step for changing altitude gradually
-#define Eps 0.4             // range for error
+#define Eps 0.2             // range for error
 #define Default 2.5          // Default height for the quad
 #define Delay 5              // time duration for which it is idle in front of the ground bot
 #define GBHeight 0.091948
+
+bool down = false;
 
 
 int tap_n_turn::navigate_quad(int ID)
@@ -44,7 +46,7 @@ int tap_n_turn::navigate_quad(int ID)
 
     ErrorLin = GetErrorLin(MAVdest,MAVpose);                       //error between expected and actual position of quad
 
-    if(ErrorLin > Eps)
+    if(ErrorLin > Eps && down == false)
     {
       follow();
       ROS_INFO("following\n");
@@ -271,15 +273,17 @@ void tap_n_turn::GetEulerAngles(Quaternionm q, double* yaw, double* pitch, doubl
 
    void tap_n_turn::descent()
    {
-    MAVdest.pose.pose.position.z =GBHeight;                                   //descent of MAV
+    MAVdest.pose.pose.position.z =-30;                                   //descent of MAV
     destination.set_dest((MAVpose.pose.pose.position.y)*(-1),MAVpose.pose.pose.position.x,MAVdest.pose.pose.position.z,0);
     ROS_INFO("%f \t %f \t  ",ErrorLin, MAVpose.pose.pose.position.z );
+    down = true;
    }
 
   void tap_n_turn::ascent()
   {
     destination.set_dest((MAVdest.pose.pose.position.y)*(-1),MAVdest.pose.pose.position.x,Default,0);
      ROS_INFO("%f \t %f \t  ",ErrorLin, MAVpose.pose.pose.position.z );
+     down = false;
   }
 
   double tap_n_turn::GetTheta(int ID)
