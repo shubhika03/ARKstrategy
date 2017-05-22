@@ -200,7 +200,7 @@ void strategy::herd_bots()                              //go to the no1 and no2 
 		char publish_name[40];
     	sprintf(publish_name, "robot%d/cmd_vel", bots[z]);
 
-    //fly_quad.navigate_quad(bots[z]);
+    fly_quad.navigate_quad(bots[z]);
 
 		rotate(PI,publish_name,bots[z]);
     	z++;
@@ -255,7 +255,7 @@ void strategy::FindBotsInsideCircle()                               //to find th
 	centerBotID = temp.second;
 
   ROS_INFO("center bot id:::::%d\n", centerBotID);
-
+	
   nav_msgs::Odometry center;
   nav_msgs::Odometry inside;
 
@@ -264,7 +264,6 @@ void strategy::FindBotsInsideCircle()                               //to find th
   {
 		if(count!=centerBotID)
     {
-
 			ros::Rate loop_rate(10);
 			ros::spinOnce();
 			loop_rate.sleep();
@@ -291,7 +290,7 @@ void strategy::FirstOperation()                                          //to de
 
 	char publish_name[40];
   sprintf(publish_name, "robot%d/cmd_vel", centerBotID);
-	//fly_quad.navigate_quad(centerBotID);
+	fly_quad.navigate_quad(centerBotID);
 
   nav_msgs::Odometry center;
   qt centerq;
