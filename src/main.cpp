@@ -24,6 +24,8 @@ int main(int argc, char *argv[])
 			STRATEGY.FirstOperation();
 			STRATEGY.FindBotsInsideCircle();
 			STRATEGY.t_plan();
+			STRATEGY.FindBotsInsideCircle();
+			STRATEGY.t_plan();
 			timer2 = time(NULL) - timer1;
 			while(timer2<=10)
 				timer2 = time(NULL) - timer1;

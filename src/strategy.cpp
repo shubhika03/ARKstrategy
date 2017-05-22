@@ -10,7 +10,7 @@
 #include "../include/strategy/flyquad.h"
 
 #define PI 3.14159
-#define MIN_DIST 9
+#define MIN_DIST 10
 using namespace std;
 
 void strategy:: retrieve_pose(int ID, nav_msgs::Odometry *gbpose)
@@ -313,8 +313,9 @@ void strategy::FirstOperation()                                          //to de
 	}
 	else if((yaw>theta2 && yaw<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
 	{
-		ROS_INFO("Condition 2 for target bot::::::45 degree turn \n");
-    rotate((PI/4),publish_name,centerBotID);
+		
+    	ROS_INFO("Condition 4 for target bot::::::180 then 45 degree turn\n");
+    	rotate((5*PI/4),publish_name,centerBotID);
 	}
 	else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (yaw>angle(theta1+PI/4) || yaw<angle(theta2+PI/2))))
 	{
@@ -323,8 +324,8 @@ void strategy::FirstOperation()                                          //to de
 	}
 	else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4) || (angle(theta2+PI)*angle(theta2+PI+PI/4) && (yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))))
 	{
-		ROS_INFO("Condition 4 for target bot::::::180 then 45 degree turn\n");
-    rotate((5*PI/4),publish_name,centerBotID);
+		ROS_INFO("Condition 2 for target bot::::::45 degree turn \n");
+    rotate((PI/4),publish_name,centerBotID);
 	}
   
 }
@@ -541,8 +542,9 @@ void strategy::action(int bot_no){
   }
   else if((yaw>theta2 && yaw<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
   {
-    ROS_INFO("Condition 2 for surrounding bot::::::45 degree turn \n");
-    rotate((PI/4),publish_name,bot_no);
+
+    ROS_INFO("Condition 4 for surrounding bot::::::180 then 45 degree turn\n");
+    rotate((5*PI/4),publish_name,bot_no);
   }
   else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (yaw>angle(theta1+PI/4) || yaw<angle(theta2+PI/2))))
   {
@@ -551,13 +553,10 @@ void strategy::action(int bot_no){
   }
   else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4) || (angle(theta2+PI)*angle(theta2+PI+PI/4) && (yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))))
   {
-    ROS_INFO("Condition 4 for surrounding bot::::::180 then 45 degree turn\n");
-    rotate((5*PI/4),publish_name,bot_no);
+    ROS_INFO("Condition 2 for surrounding bot::::::45 degree turn \n");
+    rotate((PI/4),publish_name,bot_no);
   }
-  
-
 }
-
 
 void strategy::t_plan(){
 
