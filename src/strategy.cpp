@@ -199,7 +199,7 @@ void strategy::herd_bots()                              //go to the no1 and no2 
 		char publish_name[40];
     	sprintf(publish_name, "robot%d/cmd_vel", bots[z]);
 
-    fly_quad.navigate_quad(bots[z]);
+    //fly_quad.navigate_quad(bots[z]);
 
 		rotate(PI,publish_name,bots[z]);
     	z++;
@@ -209,50 +209,18 @@ void strategy::herd_bots()                              //go to the no1 and no2 
 
 void strategy::ComputeDistance()                                     //computes distance of every bot from the green line
 {
-	
   for(int i=4;i<14;i++)
   {
-  	int flag=1;
-  	if((!bots_removed.empty()))
-  	{
-  		for(int j=0; j<bots_removed.size(); j++)
-  		{
-  			if(bots_removed[j]==i)
-  				flag=0;
-  		}
-  		if(flag==1)
-  		{
-	  		nav_msgs:: Odometry temp;
-			  ros::Rate loop_rate(10);
-			  ros::spinOnce();
-			  loop_rate.sleep();
-	   	  retrieve_pose(i, &temp);
-        if(temp.pose.pose.position.y<=10 && temp.pose.pose.position.y>=-10 && temp.pose.pose.position.x<=10 && temp.pose.pose.position.y>=-10){
-			     double y = 10 - temp.pose.pose.position.y;
-		  	   ClosestBot.insert(make_pair(y,i));
-         }
-        else
-          bots_removed.push_back(i);
-         
-  		}
-  		
-  	}
-  	else
+  	if(is_bot_valid[i] == true)
   	{
   		nav_msgs:: Odometry temp;
-		  ros::Rate loop_rate(10);
-		  ros::spinOnce();
-		  loop_rate.sleep();
-   	  retrieve_pose(i, &temp);
-		  if(temp.pose.pose.position.y<=10 && temp.pose.pose.position.y>=-10 && temp.pose.pose.position.x<=10 && temp.pose.pose.position.y>=-10){
-        double y = 10 - temp.pose.pose.position.y;
-        ClosestBot.insert(make_pair(y,i));
-      }
-      else
-        bots_removed.push_back(i);
-         
-  	}
-    
+		ros::Rate loop_rate(10);
+	    ros::spinOnce();
+	    loop_rate.sleep();
+	 	retrieve_pose(i, &temp);
+	    double y = 10 - temp.pose.pose.position.y;
+		ClosestBot.insert(make_pair(y,i));
+  	}	
   }
 }
 
@@ -263,7 +231,7 @@ void strategy::FindBotsInsideCircle()                               //to find th
 	p temp = *ClosestBot.begin();
 	centerBotID = temp.second;
 
-  ROS_INFO("center bot id:::::%d\n", centerBotID);
+ 
 	
   nav_msgs::Odometry center;
   nav_msgs::Odometry inside;
@@ -273,21 +241,29 @@ void strategy::FindBotsInsideCircle()                               //to find th
 	int count=4;
 	while(count<14)
   {
+  	if(inside.pose.pose.position.x>=-10 && inside.pose.pose.position.x<=10 && inside.pose.pose.position.y>=-10 && inside.pose.pose.position.y<=10)
+  	{
 		if(count!=centerBotID)
-    {
+	    {
 			ros::Rate loop_rate(10);
 			ros::spinOnce();
 			loop_rate.sleep();
-      retrieve_pose(centerBotID, &center);
-      retrieve_pose(count, &inside);
-     }
-  	double dist = pow((inside.pose.pose.position.x - center.pose.pose.position.x),2) + pow((inside.pose.pose.position.y - center.pose.pose.position.y),2);
-  	if((dist - 25)<=0 && count!=centerBotID)
-    {
-  		BotsInsideCircle.push_back(count);
-      ROS_INFO("bot inside circle::::::%d\n", count);
-    }
-  	count++;
+	        retrieve_pose(centerBotID, &center);
+	        retrieve_pose(count, &inside);
+	     }
+	  	double dist = pow((inside.pose.pose.position.x - center.pose.pose.position.x),2) + pow((inside.pose.pose.position.y - center.pose.pose.position.y),2);
+	  	if((dist - 25)<=0 && count!=centerBotID)
+	    {
+	  		BotsInsideCircle.push_back(count);
+	        ROS_INFO("bot inside circle::::::%d\n", count);
+	    }
+	  	count++;
+	}
+	else
+	{
+		is_bot_valid[count] = false;
+		count++;
+	}
   }
 }
 
@@ -300,9 +276,11 @@ void strategy::FirstOperation()                                          //to de
 	p temp = *ClosestBot.begin();
 	centerBotID = temp.second;
 
+	ROS_INFO("center bot id:::::%d\n", centerBotID);
+
 	char publish_name[40];
   sprintf(publish_name, "robot%d/cmd_vel", centerBotID);
-	fly_quad.navigate_quad(centerBotID);
+	//fly_quad.navigate_quad(centerBotID);
 
   nav_msgs::Odometry center;
   qt centerq;
@@ -322,8 +300,8 @@ void strategy::FirstOperation()                                          //to de
 
   
 	GetEulerAngles(centerq, &yaw, &pitch, &roll);
-  ROS_INFO("theta 1=%lf  theta2=%lf\n",theta1,theta2);
-  ROS_INFO("yaw=%lf\n",yaw);
+  //ROS_INFO("theta 1=%lf  theta2=%lf\n",theta1,theta2);
+  //ROS_INFO("yaw=%lf\n",yaw);
 
 	if(yaw>=theta1 && yaw<=theta2 || (theta1*theta2<0 && (yaw>=theta1 || yaw <=theta2)))
 		ROS_INFO("Condition 0 for target bot::::::do nothing\n");
@@ -428,7 +406,7 @@ int strategy::IsOutsideWhite()
 	}
 	else
 	{
-		bots_removed.push_back(centerBotID);
+		is_bot_valid[centerBotID] = false;
 		return 0;
 	}
 }
@@ -601,44 +579,24 @@ void strategy::t_plan(){
   float dis,min;
   int bot_no=-1,flag;
   char topic_name2[40];
-  cout<<"size of bots removed "<<bots_removed.size()<<endl;
+  //cout<<"size of bots removed "<<bots_removed.size()<<endl;
   for(int i=0;i<size;i++)
   {
-    flag=0;
-    if(!bots_removed.empty()){
-      for(int j=0;j<bots_removed.size();i++){
-        if(bots_removed[j]==BotsInsideCircle[i]){
-          flag=1;
-          break;
-        }
-      }
-
-      if(flag!=1){
-        dis=dist_whitel(BotsInsideCircle[i]);
-        if(bot_no==-1){
-          min=dis;
-          bot_no=BotsInsideCircle[i];
-        }
-        else if(dis<min){
-          min=dis;
-        bot_no=BotsInsideCircle[i];
-        }  
-      }
-    }
-    else{
-      dis=dist_whitel(BotsInsideCircle[i]);
-      if(bot_no==-1){
-        min=dis;
-        bot_no=BotsInsideCircle[i];
-      }
-      else if(dis<min){
-        min=dis;
-      bot_no=BotsInsideCircle[i];
-      }  
-    }
-    
-
-  }
+  	if(is_bot_valid[BotsInsideCircle[i]] == true)
+  	{
+	    dis=dist_whitel(BotsInsideCircle[i]);
+	    if(bot_no==-1)
+	    {
+	      min=dis;
+	      bot_no=BotsInsideCircle[i];
+	    }
+	    else if(dis<min)
+	    {
+	      min=dis;
+	      bot_no=BotsInsideCircle[i];
+	    }
+	}  
+   }
   ROS_INFO("bot inside the circle to be considered %d\n",bot_no);
 
   action(bot_no);

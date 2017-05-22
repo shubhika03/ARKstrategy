@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 			STRATEGY.FindBotsInsideCircle();
 			STRATEGY.t_plan();
 			timer2 = time(NULL) - timer1;
-			while(timer2<=20)
+			while(timer2<=10)
 				timer2 = time(NULL) - timer1;
 
 		}
