@@ -62,6 +62,8 @@ class strategy{
 	    sub_12 = n.subscribe("robot12/odom", 100, &strategy::groundbot12Callback,this);
 	    sub_13 = n.subscribe("robot13/odom", 100, &strategy::groundbot13Callback,this);
 
+	    for(int i=0; i<14; i++)
+	    	is_bot_valid[i] = true;
 	  }
 
 	ros::NodeHandle n;
@@ -85,7 +87,8 @@ class strategy{
 		//double centerX, centerY,centerZ;                                //  x and y coordinates of the center/target bot
 		double angular_speed;                                      //  needed for qauternian angle to euler angle
 		vector <float>distance_bots;
-		vector <int>bots_removed;
+		//vector <int>bots_removed;
+		bool is_bot_valid[14];
 		int no1,no2;
     	bool clockwise;
 	  nav_msgs::Odometry gb4pose;                                     //position of ground bot
