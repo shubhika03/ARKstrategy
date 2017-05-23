@@ -13,7 +13,6 @@
 #define MIN_DIST 9
 using namespace std;
 
-
 void strategy:: retrieve_pose(int ID, nav_msgs::Odometry *gbpose)
 {
   switch(ID)
@@ -130,10 +129,10 @@ void strategy:: retrieve_pose(int ID, nav_msgs::Odometry *gbpose)
       break;
 
     case 12:
-    gbpose->pose.pose.orientation.x = gb12pose.pose.pose.orientation.x;
-    gbpose->pose.pose.orientation.y = gb12pose.pose.pose.orientation.y;
-    gbpose->pose.pose.orientation.z = gb12pose.pose.pose.orientation.z;
-    gbpose->pose.pose.orientation.w = gb12pose.pose.pose.orientation.w;
+      gbpose->pose.pose.orientation.x = gb12pose.pose.pose.orientation.x;
+      gbpose->pose.pose.orientation.y = gb12pose.pose.pose.orientation.y;
+      gbpose->pose.pose.orientation.z = gb12pose.pose.pose.orientation.z;
+      gbpose->pose.pose.orientation.w = gb12pose.pose.pose.orientation.w;
       gbpose->pose.pose.position.x = gb12pose.pose.pose.position.x;
       gbpose->pose.pose.position.y = gb12pose.pose.pose.position.y;
       gbpose->pose.pose.position.z = gb12pose.pose.pose.position.z;
@@ -259,6 +258,8 @@ void strategy::FindBotsInsideCircle()                               //to find th
   nav_msgs::Odometry center;
   nav_msgs::Odometry inside;
 
+  BotsInsideCircle.clear();
+
 	int count=4;
 	while(count<14)
   {
@@ -284,6 +285,7 @@ void strategy::FindBotsInsideCircle()                               //to find th
 
 void strategy::FirstOperation()                                          //to decide the first operation of the center bot
 {
+  ROS_INFO("for target bot\n");
 	double yaw=0, pitch=0, roll=0;
 	int centerBotID;
 	p temp = *ClosestBot.begin();
@@ -307,33 +309,37 @@ void strategy::FirstOperation()                                          //to de
   centerq.w = center.pose.pose.orientation.w;
 
 	double theta1 = atan((10 - center.pose.pose.position.y)/(10 - center.pose.pose.position.x));
-	double theta2 = PI - atan((10 - center.pose.pose.position.y)/(-10 - center.pose.pose.position.x));
+	double theta2 = PI + atan((10 - center.pose.pose.position.y)/(-10 - center.pose.pose.position.x));
 
+  
 	GetEulerAngles(centerq, &yaw, &pitch, &roll);
+  ROS_INFO("theta 1=%lf  theta2=%lf\n",theta1,theta2);
+  ROS_INFO("yaw=%lf\n",yaw);
 
-	if(yaw>=theta1 && yaw<=theta2)
-		ROS_INFO("Condition 0::::::do nothing\n");
+	if(yaw>=theta1 && yaw<=theta2 || (theta1*theta2<0 && (yaw>=theta1 || yaw <=theta2)))
+		ROS_INFO("Condition 0 for target bot::::::do nothing\n");
 
 	else if((yaw>=angle(theta1+PI) && yaw<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (yaw>=angle(theta1+PI) || yaw<=angle(theta2+PI)) ) )
 	{
-		ROS_INFO("Condition 1::::::180 degree turn %f\n",yaw);
+		ROS_INFO("Condition 1 for target bot::::::180 degree turn %f\n",yaw);
     rotate(PI,publish_name,centerBotID);
 	}
 	else if((yaw>theta2 && yaw<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
 	{
-		ROS_INFO("Condition 2::::::45 degree turn \n");
+		ROS_INFO("Condition 2 for target bot::::::45 degree turn \n");
     rotate((PI/4),publish_name,centerBotID);
 	}
 	else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (yaw>angle(theta1+PI/4) || yaw<angle(theta2+PI/2))))
 	{
-		ROS_INFO("Condition 3::::::90 degree turn, tap twice\n");
+		ROS_INFO("Condition 3 for target bot::::::90 degree turn, tap twice\n");
     rotate((PI/2),publish_name,centerBotID);
 	}
 	else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4) || (angle(theta2+PI)*angle(theta2+PI+PI/4) && (yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))))
 	{
-		ROS_INFO("Condition 4::::::180 then 45 degree turn\n");
+		ROS_INFO("Condition 4 for target bot::::::180 then 45 degree turn\n");
     rotate((5*PI/4),publish_name,centerBotID);
 	}
+  
 }
 
 void strategy::rotate (double relative_angle, char publish_name[40], int ID)
@@ -367,7 +373,7 @@ void strategy::rotate (double relative_angle, char publish_name[40], int ID)
   q.z = temp.pose.pose.orientation.z;
   q.w = temp.pose.pose.orientation.w;
   GetEulerAngles(q, &yaw_i, &pitch_i, &roll_i);
-  ROS_INFO("before %f\n",yaw_i);
+  //ROS_INFO("before %f\n",yaw_i);
 
   while(1)
   {
@@ -389,7 +395,7 @@ void strategy::rotate (double relative_angle, char publish_name[40], int ID)
 
 }
 
-ROS_INFO("after %f\n",Yaw);
+//ROS_INFO("after %f\n",Yaw);
  vel_msg.angular.z = 0;
  publi.publish(vel_msg);
 }
@@ -476,21 +482,21 @@ float strategy::dist_whitel(int id){
   float orient=yaw;
 
   if(orient>=0 && orient<PI/2){
-      return 10-posY;
+      return 10-posX;
   }
 
   if(orient>=PI/2 && orient>PI){
-      if(10-posY<10+posX)
-        return 10-posY;
-      else
         return 10+posX;
   }
 
   if(orient<0 && orient>-PI/2){
-      return 10+posY;
+      if(10-posX<10+posY)
+        return 10-posX;
+      else
+        return 10+posY;
   }
 
-  if(orient>-PI && orient<-PI/2){
+  if(orient>=-PI && orient<-PI/2){
   	if(10+posY<10+posX)
       return 10+posY;
   	else
@@ -512,7 +518,7 @@ float strategy::angle(float ang){
 
 void strategy::action(int bot_no){
 
-  float theta1,theta2,orient;
+  double yaw,pitch,roll;
   char publish_name[40];
   sprintf(publish_name, "robot%d/cmd_vel", bot_no);
 
@@ -523,60 +529,52 @@ void strategy::action(int bot_no){
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(bot_no, &temp1);
-  double posX=temp1.pose.pose.position.x;
-  double posY=temp1.pose.pose.position.y;
-  double centerX=temp2.pose.pose.position.x;
-  double centerY=temp2.pose.pose.position.y;
-
+  
   qt q;
   q.x = temp1.pose.pose.orientation.x;
   q.y = temp1.pose.pose.orientation.y;
   q.z = temp1.pose.pose.orientation.z;
   q.w = temp1.pose.pose.orientation.w;
 
-  theta1=angle(atan((centerX-posX)/(centerY-posY))-PI/4);
-  theta2=angle(theta1 + PI/2);
 
-  double yaw,pitch,roll;
-  GetEulerAngles(q,&yaw,&pitch,&roll);
-  orient=yaw;
+  double theta1 = atan((10 - temp1.pose.pose.position.y)/(10 - temp1.pose.pose.position.x));
+  double theta2 = PI + atan((10 - temp1.pose.pose.position.y)/(-10 - temp1.pose.pose.position.x));
 
-  if( (orient>=theta2 && orient<=angle(theta2+PI/4)) || ( theta2*angle(theta2-PI/4)<0 && (orient>theta2 || orient<angle(theta2+PI/4) ) ) ){
-    //one 45 degree rotation clockwise
-  	//yaw=angle(yaw-PI/4);
-  	ROS_INFO(":::::::::::condition 1\n");
-    rotate(PI/4,publish_name,bot_no);
-  }
-  else if( (orient>=angle(theta1+PI) && orient<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (orient>=angle(theta1+PI) || orient<=angle(theta2+PI)) ) ){
-    //turn 180 degree
-    //yaw=angle(yaw-PI);
-    ROS_INFO("::::::::::::::condition 2\n");
+  GetEulerAngles(q, &yaw, &pitch, &roll);
+  ROS_INFO("s_theta 1=%lf  s_theta2=%lf\n",theta1,theta2);
+  ROS_INFO("s_yaw=%lf\n",yaw);
+
+  if(yaw>=theta1 && yaw<=theta2 || (theta1*theta2<0 && (yaw>=theta1 || yaw <=theta2)))
+    ROS_INFO("Condition 0 for surrounding bot::::::do nothing\n");
+
+  else if((yaw>=angle(theta1+PI) && yaw<=angle(theta2+PI) ) || (angle(theta1+PI)*angle(theta2+PI)<0 && (yaw>=angle(theta1+PI) || yaw<=angle(theta2+PI)) ) )
+  {
+    ROS_INFO("Condition 1 for surrounding bot::::::180 degree turn %f\n",yaw);
     rotate(PI,publish_name,bot_no);
   }
-  else if( (orient<=theta1 && orient>=angle(theta1-PI/4)) || ( theta1*angle(theta1-PI/4)<0 && (orient>=angle(theta1-PI/4) || orient<=theta1 ) ) ){
-    //one 180 degree turn and then two 45 degree clockwise rotation
-    //yaw=angle(yaw+3*PI/2);
-    ROS_INFO("::::::::::::::::condition 3\n");
-    rotate(3*PI/2,publish_name,bot_no);
+  else if((yaw>theta2 && yaw<angle(theta2+PI/4)) || ( theta2*angle(theta2+PI/4)<0 && (yaw>theta2 || yaw<angle(theta2+PI/4))))
+  {
+    ROS_INFO("Condition 2 for surrounding bot::::::45 degree turn \n");
+    rotate((PI/4),publish_name,bot_no);
   }
-  else if( (orient>=angle(theta2+PI/4) && orient<=angle(theta2+PI/2)) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<=0 && (orient>angle(theta1+PI/4) || orient<angle(theta2+PI/2) ) )){
-    //two 45 degree anticlockwise rotations
-    //yaw=angle(yaw+PI/2);
-    ROS_INFO(":::::::::::::::condition 4\n");
-    rotate(PI/2,publish_name,bot_no);
+  else if(yaw>=angle(theta2 + PI/4) && yaw<=angle(theta2 + PI/2) || ( angle(theta2+PI/4)*angle(theta2+PI/2)<0 && (yaw>angle(theta1+PI/4) || yaw<angle(theta2+PI/2))))
+  {
+    ROS_INFO("Condition 3 for surrounding bot::::::90 degree turn, tap twice\n");
+    rotate((PI/2),publish_name,bot_no);
   }
-  else if( (orient<angle(theta1-PI/4) && orient>=angle(theta1-PI/2)) || ( angle(theta1-PI/2)*angle(theta1-PI/4)<0 && (orient>angle(theta1-PI/2) || orient<angle(theta1-PI/4) ) )){
-    //one 180 degree turn and one 45 degree clockwise turn
-    //yaw=angle(yaw-5*PI/4);
-    ROS_INFO("::::::::::::::::condition 5\n");
-    rotate(5*PI/4,publish_name,bot_no);
+  else if(yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4) || (angle(theta2+PI)*angle(theta2+PI+PI/4) && (yaw>=angle(theta2+PI) && yaw<=angle(theta2+PI+PI/4))))
+  {
+    ROS_INFO("Condition 4 for surrounding bot::::::180 then 45 degree turn\n");
+    rotate((5*PI/4),publish_name,bot_no);
   }
+  
 
 }
 
 
 void strategy::t_plan(){
 
+  ROS_INFO("t_plan started\n");
   int centerBotID;
   p temp = *ClosestBot.begin();
   centerBotID = temp.second;
@@ -592,18 +590,44 @@ void strategy::t_plan(){
   double centerY=temp1.pose.pose.position.y;
 
   float dis,min;
-  int bot_no=BotsInsideCircle[0];
+  int bot_no=-1,flag;
   char topic_name2[40];
-
+  cout<<"size of bots removed "<<bots_removed.size()<<endl;
   for(int i=0;i<size;i++)
   {
-    dis=dist_whitel(BotsInsideCircle[i]);
-    if(i==0)
-      min=dis;
-    else if(dis<min){
-      min=dis;
+    flag=0;
+    if(!bots_removed.empty()){
+      for(int j=0;j<bots_removed.size();i++){
+        if(bots_removed[j]==BotsInsideCircle[i]){
+          flag=1;
+          break;
+        }
+      }
+
+      if(flag!=1){
+        dis=dist_whitel(BotsInsideCircle[i]);
+        if(bot_no==-1){
+          min=dis;
+          bot_no=BotsInsideCircle[i];
+        }
+        else if(dis<min){
+          min=dis;
+        bot_no=BotsInsideCircle[i];
+        }  
+      }
+    }
+    else{
+      dis=dist_whitel(BotsInsideCircle[i]);
+      if(bot_no==-1){
+        min=dis;
+        bot_no=BotsInsideCircle[i];
+      }
+      else if(dis<min){
+        min=dis;
       bot_no=BotsInsideCircle[i];
-  }
+      }  
+    }
+    
 
   }
   ROS_INFO("bot inside the circle to be considered %d\n",bot_no);
