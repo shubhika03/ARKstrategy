@@ -8,6 +8,8 @@
 #include "std_msgs/Empty.h"
 #include "nav_msgs/Odometry.h"
 #include "../include/strategy/flyquad.h"
+#include <stdlib.h>
+
 
 #define step 0.1              // step for changing altitude gradually
 #define Eps 0.4            // range for error
@@ -72,7 +74,9 @@ int tap_n_turn::navigate_quad(int ID)
           ascent();
           while(MAVpose.pose.pose.position.z <= 0.95*Default)
           {
-            sleep(0.5);
+            usleep(500);
+            ROS_INFO("waiting for ascent :: %f ", MAVpose.pose.pose.position.z);
+            ros::spinOnce();
           }
           ROS_INFO("ascend:::reached\n");
           return 0;
