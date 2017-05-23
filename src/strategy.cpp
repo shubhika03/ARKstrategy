@@ -223,24 +223,34 @@ void strategy::ComputeDistance()                                     //computes 
   		if(flag==1)
   		{
 	  		nav_msgs:: Odometry temp;
-			ros::Rate loop_rate(10);
-			ros::spinOnce();
-			loop_rate.sleep();
-	   	    retrieve_pose(i, &temp);
-			double y = 10 - temp.pose.pose.position.y;
-			ClosestBot.insert(make_pair(y,i));
+			  ros::Rate loop_rate(10);
+			  ros::spinOnce();
+			  loop_rate.sleep();
+	   	  retrieve_pose(i, &temp);
+        if(temp.pose.pose.position.y<=10 && temp.pose.pose.position.y>=-10 && temp.pose.pose.position.x<=10 && temp.pose.pose.position.y>=-10){
+			     double y = 10 - temp.pose.pose.position.y;
+		  	   ClosestBot.insert(make_pair(y,i));
+         }
+        else
+          bots_removed.push_back(i);
+         
   		}
   		
   	}
   	else
   	{
   		nav_msgs:: Odometry temp;
-		ros::Rate loop_rate(10);
-		ros::spinOnce();
-		loop_rate.sleep();
-   	    retrieve_pose(i, &temp);
-		double y = 10 - temp.pose.pose.position.y;
-		ClosestBot.insert(make_pair(y,i));
+		  ros::Rate loop_rate(10);
+		  ros::spinOnce();
+		  loop_rate.sleep();
+   	  retrieve_pose(i, &temp);
+		  if(temp.pose.pose.position.y<=10 && temp.pose.pose.position.y>=-10 && temp.pose.pose.position.x<=10 && temp.pose.pose.position.y>=-10){
+        double y = 10 - temp.pose.pose.position.y;
+        ClosestBot.insert(make_pair(y,i));
+      }
+      else
+        bots_removed.push_back(i);
+         
   	}
     
   }
