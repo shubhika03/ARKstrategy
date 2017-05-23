@@ -18,6 +18,7 @@
 bool down = false;
 
 
+
 int tap_n_turn::navigate_quad(int ID)
 {
 
@@ -44,6 +45,8 @@ int tap_n_turn::navigate_quad(int ID)
     MAVdest.pose.pose.position.x = gbpose.pose.pose.position.x + (t0)*(gbpose.twist.twist.linear.x)*(cos(theta));
     MAVdest.pose.pose.position.y = gbpose.pose.pose.position.y +  (t0)*(gbpose.twist.twist.linear.x)*(sin(theta));
 
+    ROS_INFO("Running");
+
     ErrorLin = GetErrorLin(MAVdest,MAVpose);                       //error between expected and actual position of quad
 
     if(ErrorLin > Eps && down == false)
@@ -67,6 +70,10 @@ int tap_n_turn::navigate_quad(int ID)
         if (MAVpose.pose.pose.position.z<=GBHeight)
         {
           ascent();
+          while(MAVpose.pose.pose.position.z <= 0.95*Default)
+          {
+            sleep(0.5);
+          }
           ROS_INFO("ascend:::reached\n");
           return 0;
         }
@@ -286,7 +293,7 @@ void tap_n_turn::GetEulerAngles(Quaternionm q, double* yaw, double* pitch, doubl
 
    void tap_n_turn::descent()
    {
-    MAVdest.pose.pose.position.z =-30;                                   //descent of MAV
+    MAVdest.pose.pose.position.z = 0;                                   //descent of MAV
     destination.set_dest((MAVpose.pose.pose.position.y)*(-1),MAVpose.pose.pose.position.x,MAVdest.pose.pose.position.z,0);
     ROS_INFO("%f \t %f \t  ",ErrorLin, MAVpose.pose.pose.position.z );
     down = true;

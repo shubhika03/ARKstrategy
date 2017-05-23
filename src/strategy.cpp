@@ -199,7 +199,7 @@ void strategy::herd_bots()                              //go to the no1 and no2 
 		char publish_name[40];
     	sprintf(publish_name, "robot%d/cmd_vel", bots[z]);
 
-    //fly_quad.navigate_quad(bots[z]);
+    fly_quad.navigate_quad(bots[z]);
 
 		rotate(PI,publish_name,bots[z]);
     	z++;
@@ -209,7 +209,7 @@ void strategy::herd_bots()                              //go to the no1 and no2 
 
 void strategy::ComputeDistance()                                     //computes distance of every bot from the green line
 {
-	
+
   for(int i=4;i<14;i++)
   {
   	int flag=1;
@@ -233,9 +233,9 @@ void strategy::ComputeDistance()                                     //computes 
          }
         else
           bots_removed.push_back(i);
-         
+
   		}
-  		
+
   	}
   	else
   	{
@@ -250,9 +250,9 @@ void strategy::ComputeDistance()                                     //computes 
       }
       else
         bots_removed.push_back(i);
-         
+
   	}
-    
+
   }
 }
 
@@ -303,7 +303,7 @@ void strategy::FirstOperation()                                          //to de
 
 	char publish_name[40];
   sprintf(publish_name, "robot%d/cmd_vel", centerBotID);
-	//fly_quad.navigate_quad(centerBotID);
+	fly_quad.navigate_quad(centerBotID);
 
   nav_msgs::Odometry center;
   qt centerq;
@@ -321,7 +321,7 @@ void strategy::FirstOperation()                                          //to de
 	double theta1 = atan((10 - center.pose.pose.position.y)/(10 - center.pose.pose.position.x));
 	double theta2 = PI + atan((10 - center.pose.pose.position.y)/(-10 - center.pose.pose.position.x));
 
-  
+
 	GetEulerAngles(centerq, &yaw, &pitch, &roll);
   ROS_INFO("theta 1=%lf  theta2=%lf\n",theta1,theta2);
   ROS_INFO("yaw=%lf\n",yaw);
@@ -349,7 +349,7 @@ void strategy::FirstOperation()                                          //to de
 		ROS_INFO("Condition 4 for target bot::::::180 then 45 degree turn\n");
     rotate((5*PI/4),publish_name,centerBotID);
 	}
-  
+
 }
 
 void strategy::rotate (double relative_angle, char publish_name[40], int ID)
@@ -539,7 +539,7 @@ void strategy::action(int bot_no){
   ros::spinOnce();
   loop_rate.sleep();
   retrieve_pose(bot_no, &temp1);
-  
+
   qt q;
   q.x = temp1.pose.pose.orientation.x;
   q.y = temp1.pose.pose.orientation.y;
@@ -577,7 +577,7 @@ void strategy::action(int bot_no){
     ROS_INFO("Condition 4 for surrounding bot::::::180 then 45 degree turn\n");
     rotate((5*PI/4),publish_name,bot_no);
   }
-  
+
 
 }
 
@@ -623,7 +623,7 @@ void strategy::t_plan(){
         else if(dis<min){
           min=dis;
         bot_no=BotsInsideCircle[i];
-        }  
+        }
       }
     }
     else{
@@ -635,9 +635,9 @@ void strategy::t_plan(){
       else if(dis<min){
         min=dis;
       bot_no=BotsInsideCircle[i];
-      }  
+      }
     }
-    
+
 
   }
   ROS_INFO("bot inside the circle to be considered %d\n",bot_no);
